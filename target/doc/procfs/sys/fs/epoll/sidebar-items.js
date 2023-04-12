@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":[["max_user_watches","Get the limit on the total number of file descriptors that a user can register across all epoll instances."],["set_max_user_watches","Sets the limit on the total number of file descriptors that a user can register across all epoll instances."]]};

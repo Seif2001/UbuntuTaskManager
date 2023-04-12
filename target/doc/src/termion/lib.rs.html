@@ -1,0 +1,132 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/seif/.cargo/registry/src/github.com-1ecc6299db9ec823/termion-1.5.6/src/lib.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>lib.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../normalize.css"><link rel="stylesheet" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../ayu.css" disabled><link rel="stylesheet" href="../../dark.css" disabled><link rel="stylesheet" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../termion/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../termion/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../termion/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<span id="2">2</span>
+<span id="3">3</span>
+<span id="4">4</span>
+<span id="5">5</span>
+<span id="6">6</span>
+<span id="7">7</span>
+<span id="8">8</span>
+<span id="9">9</span>
+<span id="10">10</span>
+<span id="11">11</span>
+<span id="12">12</span>
+<span id="13">13</span>
+<span id="14">14</span>
+<span id="15">15</span>
+<span id="16">16</span>
+<span id="17">17</span>
+<span id="18">18</span>
+<span id="19">19</span>
+<span id="20">20</span>
+<span id="21">21</span>
+<span id="22">22</span>
+<span id="23">23</span>
+<span id="24">24</span>
+<span id="25">25</span>
+<span id="26">26</span>
+<span id="27">27</span>
+<span id="28">28</span>
+<span id="29">29</span>
+<span id="30">30</span>
+<span id="31">31</span>
+<span id="32">32</span>
+<span id="33">33</span>
+<span id="34">34</span>
+<span id="35">35</span>
+<span id="36">36</span>
+<span id="37">37</span>
+<span id="38">38</span>
+<span id="39">39</span>
+<span id="40">40</span>
+<span id="41">41</span>
+<span id="42">42</span>
+<span id="43">43</span>
+<span id="44">44</span>
+<span id="45">45</span>
+<span id="46">46</span>
+<span id="47">47</span>
+<span id="48">48</span>
+<span id="49">49</span>
+<span id="50">50</span>
+<span id="51">51</span>
+<span id="52">52</span>
+<span id="53">53</span>
+<span id="54">54</span>
+<span id="55">55</span>
+<span id="56">56</span>
+<span id="57">57</span>
+<span id="58">58</span>
+<span id="59">59</span>
+<span id="60">60</span>
+<span id="61">61</span>
+<span id="62">62</span>
+<span id="63">63</span>
+<span id="64">64</span>
+<span id="65">65</span>
+</pre><pre class="rust"><code><span class="doccomment">//! Termion is a pure Rust, bindless library for low-level handling, manipulating
+//! and reading information about terminals. This provides a full-featured
+//! alternative to Termbox.
+//!
+//! Termion aims to be simple and yet expressive. It is bindless, meaning that it
+//! is not a front-end to some other library (e.g., ncurses or termbox), but a
+//! standalone library directly talking to the TTY.
+//!
+//! Supports Redox, Mac OS X, and Linux (or, in general, ANSI terminals).
+//!
+//! For more information refer to the [README](https://github.com/redox-os/termion).
+</span><span class="attribute">#![warn(missing_docs)]
+
+</span><span class="kw">extern crate </span>numtoa;
+
+<span class="attribute">#[cfg(target_os = <span class="string">&quot;redox&quot;</span>)]
+#[path=<span class="string">&quot;sys/redox/mod.rs&quot;</span>]
+</span><span class="kw">mod </span>sys;
+
+<span class="attribute">#[cfg(all(unix, not(target_os = <span class="string">&quot;redox&quot;</span>)))]
+#[path=<span class="string">&quot;sys/unix/mod.rs&quot;</span>]
+</span><span class="kw">mod </span>sys;
+
+<span class="kw">pub use </span>sys::size::terminal_size;
+<span class="attribute">#[cfg(all(unix, not(target_os = <span class="string">&quot;redox&quot;</span>)))]
+</span><span class="kw">pub use </span>sys::size::terminal_size_pixels;
+<span class="kw">pub use </span>sys::tty::{is_tty, get_tty};
+
+<span class="kw">mod async</span>;
+<span class="kw">pub use async</span>::{AsyncReader, async_stdin};
+
+<span class="attribute">#[macro_use]
+</span><span class="kw">mod </span>macros;
+<span class="kw">pub mod </span>clear;
+<span class="kw">pub mod </span>color;
+<span class="kw">pub mod </span>cursor;
+<span class="kw">pub mod </span>event;
+<span class="kw">pub mod </span>input;
+<span class="kw">pub mod </span>raw;
+<span class="kw">pub mod </span>screen;
+<span class="kw">pub mod </span>scroll;
+<span class="kw">pub mod </span>style;
+
+<span class="attribute">#[cfg(test)]
+</span><span class="kw">mod </span>test {
+    <span class="kw">use </span><span class="kw">super</span>::sys;
+
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>test_get_terminal_attr() {
+        sys::attr::get_terminal_attr().unwrap();
+        sys::attr::get_terminal_attr().unwrap();
+        sys::attr::get_terminal_attr().unwrap();
+    }
+
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>test_set_terminal_attr() {
+        <span class="kw">let </span>ios = sys::attr::get_terminal_attr().unwrap();
+        sys::attr::set_terminal_attr(<span class="kw-2">&amp;</span>ios).unwrap();
+    }
+
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>test_size() {
+        sys::size::terminal_size().unwrap();
+    }
+}
+</code></pre></div>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="termion" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0" ></div></body></html>

@@ -1,0 +1,1724 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/seif/.cargo/registry/src/github.com-1ecc6299db9ec823/procfs-0.15.1/src/net.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>net.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../normalize.css"><link rel="stylesheet" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../ayu.css" disabled><link rel="stylesheet" href="../../dark.css" disabled><link rel="stylesheet" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../procfs/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../procfs/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../procfs/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<span id="2">2</span>
+<span id="3">3</span>
+<span id="4">4</span>
+<span id="5">5</span>
+<span id="6">6</span>
+<span id="7">7</span>
+<span id="8">8</span>
+<span id="9">9</span>
+<span id="10">10</span>
+<span id="11">11</span>
+<span id="12">12</span>
+<span id="13">13</span>
+<span id="14">14</span>
+<span id="15">15</span>
+<span id="16">16</span>
+<span id="17">17</span>
+<span id="18">18</span>
+<span id="19">19</span>
+<span id="20">20</span>
+<span id="21">21</span>
+<span id="22">22</span>
+<span id="23">23</span>
+<span id="24">24</span>
+<span id="25">25</span>
+<span id="26">26</span>
+<span id="27">27</span>
+<span id="28">28</span>
+<span id="29">29</span>
+<span id="30">30</span>
+<span id="31">31</span>
+<span id="32">32</span>
+<span id="33">33</span>
+<span id="34">34</span>
+<span id="35">35</span>
+<span id="36">36</span>
+<span id="37">37</span>
+<span id="38">38</span>
+<span id="39">39</span>
+<span id="40">40</span>
+<span id="41">41</span>
+<span id="42">42</span>
+<span id="43">43</span>
+<span id="44">44</span>
+<span id="45">45</span>
+<span id="46">46</span>
+<span id="47">47</span>
+<span id="48">48</span>
+<span id="49">49</span>
+<span id="50">50</span>
+<span id="51">51</span>
+<span id="52">52</span>
+<span id="53">53</span>
+<span id="54">54</span>
+<span id="55">55</span>
+<span id="56">56</span>
+<span id="57">57</span>
+<span id="58">58</span>
+<span id="59">59</span>
+<span id="60">60</span>
+<span id="61">61</span>
+<span id="62">62</span>
+<span id="63">63</span>
+<span id="64">64</span>
+<span id="65">65</span>
+<span id="66">66</span>
+<span id="67">67</span>
+<span id="68">68</span>
+<span id="69">69</span>
+<span id="70">70</span>
+<span id="71">71</span>
+<span id="72">72</span>
+<span id="73">73</span>
+<span id="74">74</span>
+<span id="75">75</span>
+<span id="76">76</span>
+<span id="77">77</span>
+<span id="78">78</span>
+<span id="79">79</span>
+<span id="80">80</span>
+<span id="81">81</span>
+<span id="82">82</span>
+<span id="83">83</span>
+<span id="84">84</span>
+<span id="85">85</span>
+<span id="86">86</span>
+<span id="87">87</span>
+<span id="88">88</span>
+<span id="89">89</span>
+<span id="90">90</span>
+<span id="91">91</span>
+<span id="92">92</span>
+<span id="93">93</span>
+<span id="94">94</span>
+<span id="95">95</span>
+<span id="96">96</span>
+<span id="97">97</span>
+<span id="98">98</span>
+<span id="99">99</span>
+<span id="100">100</span>
+<span id="101">101</span>
+<span id="102">102</span>
+<span id="103">103</span>
+<span id="104">104</span>
+<span id="105">105</span>
+<span id="106">106</span>
+<span id="107">107</span>
+<span id="108">108</span>
+<span id="109">109</span>
+<span id="110">110</span>
+<span id="111">111</span>
+<span id="112">112</span>
+<span id="113">113</span>
+<span id="114">114</span>
+<span id="115">115</span>
+<span id="116">116</span>
+<span id="117">117</span>
+<span id="118">118</span>
+<span id="119">119</span>
+<span id="120">120</span>
+<span id="121">121</span>
+<span id="122">122</span>
+<span id="123">123</span>
+<span id="124">124</span>
+<span id="125">125</span>
+<span id="126">126</span>
+<span id="127">127</span>
+<span id="128">128</span>
+<span id="129">129</span>
+<span id="130">130</span>
+<span id="131">131</span>
+<span id="132">132</span>
+<span id="133">133</span>
+<span id="134">134</span>
+<span id="135">135</span>
+<span id="136">136</span>
+<span id="137">137</span>
+<span id="138">138</span>
+<span id="139">139</span>
+<span id="140">140</span>
+<span id="141">141</span>
+<span id="142">142</span>
+<span id="143">143</span>
+<span id="144">144</span>
+<span id="145">145</span>
+<span id="146">146</span>
+<span id="147">147</span>
+<span id="148">148</span>
+<span id="149">149</span>
+<span id="150">150</span>
+<span id="151">151</span>
+<span id="152">152</span>
+<span id="153">153</span>
+<span id="154">154</span>
+<span id="155">155</span>
+<span id="156">156</span>
+<span id="157">157</span>
+<span id="158">158</span>
+<span id="159">159</span>
+<span id="160">160</span>
+<span id="161">161</span>
+<span id="162">162</span>
+<span id="163">163</span>
+<span id="164">164</span>
+<span id="165">165</span>
+<span id="166">166</span>
+<span id="167">167</span>
+<span id="168">168</span>
+<span id="169">169</span>
+<span id="170">170</span>
+<span id="171">171</span>
+<span id="172">172</span>
+<span id="173">173</span>
+<span id="174">174</span>
+<span id="175">175</span>
+<span id="176">176</span>
+<span id="177">177</span>
+<span id="178">178</span>
+<span id="179">179</span>
+<span id="180">180</span>
+<span id="181">181</span>
+<span id="182">182</span>
+<span id="183">183</span>
+<span id="184">184</span>
+<span id="185">185</span>
+<span id="186">186</span>
+<span id="187">187</span>
+<span id="188">188</span>
+<span id="189">189</span>
+<span id="190">190</span>
+<span id="191">191</span>
+<span id="192">192</span>
+<span id="193">193</span>
+<span id="194">194</span>
+<span id="195">195</span>
+<span id="196">196</span>
+<span id="197">197</span>
+<span id="198">198</span>
+<span id="199">199</span>
+<span id="200">200</span>
+<span id="201">201</span>
+<span id="202">202</span>
+<span id="203">203</span>
+<span id="204">204</span>
+<span id="205">205</span>
+<span id="206">206</span>
+<span id="207">207</span>
+<span id="208">208</span>
+<span id="209">209</span>
+<span id="210">210</span>
+<span id="211">211</span>
+<span id="212">212</span>
+<span id="213">213</span>
+<span id="214">214</span>
+<span id="215">215</span>
+<span id="216">216</span>
+<span id="217">217</span>
+<span id="218">218</span>
+<span id="219">219</span>
+<span id="220">220</span>
+<span id="221">221</span>
+<span id="222">222</span>
+<span id="223">223</span>
+<span id="224">224</span>
+<span id="225">225</span>
+<span id="226">226</span>
+<span id="227">227</span>
+<span id="228">228</span>
+<span id="229">229</span>
+<span id="230">230</span>
+<span id="231">231</span>
+<span id="232">232</span>
+<span id="233">233</span>
+<span id="234">234</span>
+<span id="235">235</span>
+<span id="236">236</span>
+<span id="237">237</span>
+<span id="238">238</span>
+<span id="239">239</span>
+<span id="240">240</span>
+<span id="241">241</span>
+<span id="242">242</span>
+<span id="243">243</span>
+<span id="244">244</span>
+<span id="245">245</span>
+<span id="246">246</span>
+<span id="247">247</span>
+<span id="248">248</span>
+<span id="249">249</span>
+<span id="250">250</span>
+<span id="251">251</span>
+<span id="252">252</span>
+<span id="253">253</span>
+<span id="254">254</span>
+<span id="255">255</span>
+<span id="256">256</span>
+<span id="257">257</span>
+<span id="258">258</span>
+<span id="259">259</span>
+<span id="260">260</span>
+<span id="261">261</span>
+<span id="262">262</span>
+<span id="263">263</span>
+<span id="264">264</span>
+<span id="265">265</span>
+<span id="266">266</span>
+<span id="267">267</span>
+<span id="268">268</span>
+<span id="269">269</span>
+<span id="270">270</span>
+<span id="271">271</span>
+<span id="272">272</span>
+<span id="273">273</span>
+<span id="274">274</span>
+<span id="275">275</span>
+<span id="276">276</span>
+<span id="277">277</span>
+<span id="278">278</span>
+<span id="279">279</span>
+<span id="280">280</span>
+<span id="281">281</span>
+<span id="282">282</span>
+<span id="283">283</span>
+<span id="284">284</span>
+<span id="285">285</span>
+<span id="286">286</span>
+<span id="287">287</span>
+<span id="288">288</span>
+<span id="289">289</span>
+<span id="290">290</span>
+<span id="291">291</span>
+<span id="292">292</span>
+<span id="293">293</span>
+<span id="294">294</span>
+<span id="295">295</span>
+<span id="296">296</span>
+<span id="297">297</span>
+<span id="298">298</span>
+<span id="299">299</span>
+<span id="300">300</span>
+<span id="301">301</span>
+<span id="302">302</span>
+<span id="303">303</span>
+<span id="304">304</span>
+<span id="305">305</span>
+<span id="306">306</span>
+<span id="307">307</span>
+<span id="308">308</span>
+<span id="309">309</span>
+<span id="310">310</span>
+<span id="311">311</span>
+<span id="312">312</span>
+<span id="313">313</span>
+<span id="314">314</span>
+<span id="315">315</span>
+<span id="316">316</span>
+<span id="317">317</span>
+<span id="318">318</span>
+<span id="319">319</span>
+<span id="320">320</span>
+<span id="321">321</span>
+<span id="322">322</span>
+<span id="323">323</span>
+<span id="324">324</span>
+<span id="325">325</span>
+<span id="326">326</span>
+<span id="327">327</span>
+<span id="328">328</span>
+<span id="329">329</span>
+<span id="330">330</span>
+<span id="331">331</span>
+<span id="332">332</span>
+<span id="333">333</span>
+<span id="334">334</span>
+<span id="335">335</span>
+<span id="336">336</span>
+<span id="337">337</span>
+<span id="338">338</span>
+<span id="339">339</span>
+<span id="340">340</span>
+<span id="341">341</span>
+<span id="342">342</span>
+<span id="343">343</span>
+<span id="344">344</span>
+<span id="345">345</span>
+<span id="346">346</span>
+<span id="347">347</span>
+<span id="348">348</span>
+<span id="349">349</span>
+<span id="350">350</span>
+<span id="351">351</span>
+<span id="352">352</span>
+<span id="353">353</span>
+<span id="354">354</span>
+<span id="355">355</span>
+<span id="356">356</span>
+<span id="357">357</span>
+<span id="358">358</span>
+<span id="359">359</span>
+<span id="360">360</span>
+<span id="361">361</span>
+<span id="362">362</span>
+<span id="363">363</span>
+<span id="364">364</span>
+<span id="365">365</span>
+<span id="366">366</span>
+<span id="367">367</span>
+<span id="368">368</span>
+<span id="369">369</span>
+<span id="370">370</span>
+<span id="371">371</span>
+<span id="372">372</span>
+<span id="373">373</span>
+<span id="374">374</span>
+<span id="375">375</span>
+<span id="376">376</span>
+<span id="377">377</span>
+<span id="378">378</span>
+<span id="379">379</span>
+<span id="380">380</span>
+<span id="381">381</span>
+<span id="382">382</span>
+<span id="383">383</span>
+<span id="384">384</span>
+<span id="385">385</span>
+<span id="386">386</span>
+<span id="387">387</span>
+<span id="388">388</span>
+<span id="389">389</span>
+<span id="390">390</span>
+<span id="391">391</span>
+<span id="392">392</span>
+<span id="393">393</span>
+<span id="394">394</span>
+<span id="395">395</span>
+<span id="396">396</span>
+<span id="397">397</span>
+<span id="398">398</span>
+<span id="399">399</span>
+<span id="400">400</span>
+<span id="401">401</span>
+<span id="402">402</span>
+<span id="403">403</span>
+<span id="404">404</span>
+<span id="405">405</span>
+<span id="406">406</span>
+<span id="407">407</span>
+<span id="408">408</span>
+<span id="409">409</span>
+<span id="410">410</span>
+<span id="411">411</span>
+<span id="412">412</span>
+<span id="413">413</span>
+<span id="414">414</span>
+<span id="415">415</span>
+<span id="416">416</span>
+<span id="417">417</span>
+<span id="418">418</span>
+<span id="419">419</span>
+<span id="420">420</span>
+<span id="421">421</span>
+<span id="422">422</span>
+<span id="423">423</span>
+<span id="424">424</span>
+<span id="425">425</span>
+<span id="426">426</span>
+<span id="427">427</span>
+<span id="428">428</span>
+<span id="429">429</span>
+<span id="430">430</span>
+<span id="431">431</span>
+<span id="432">432</span>
+<span id="433">433</span>
+<span id="434">434</span>
+<span id="435">435</span>
+<span id="436">436</span>
+<span id="437">437</span>
+<span id="438">438</span>
+<span id="439">439</span>
+<span id="440">440</span>
+<span id="441">441</span>
+<span id="442">442</span>
+<span id="443">443</span>
+<span id="444">444</span>
+<span id="445">445</span>
+<span id="446">446</span>
+<span id="447">447</span>
+<span id="448">448</span>
+<span id="449">449</span>
+<span id="450">450</span>
+<span id="451">451</span>
+<span id="452">452</span>
+<span id="453">453</span>
+<span id="454">454</span>
+<span id="455">455</span>
+<span id="456">456</span>
+<span id="457">457</span>
+<span id="458">458</span>
+<span id="459">459</span>
+<span id="460">460</span>
+<span id="461">461</span>
+<span id="462">462</span>
+<span id="463">463</span>
+<span id="464">464</span>
+<span id="465">465</span>
+<span id="466">466</span>
+<span id="467">467</span>
+<span id="468">468</span>
+<span id="469">469</span>
+<span id="470">470</span>
+<span id="471">471</span>
+<span id="472">472</span>
+<span id="473">473</span>
+<span id="474">474</span>
+<span id="475">475</span>
+<span id="476">476</span>
+<span id="477">477</span>
+<span id="478">478</span>
+<span id="479">479</span>
+<span id="480">480</span>
+<span id="481">481</span>
+<span id="482">482</span>
+<span id="483">483</span>
+<span id="484">484</span>
+<span id="485">485</span>
+<span id="486">486</span>
+<span id="487">487</span>
+<span id="488">488</span>
+<span id="489">489</span>
+<span id="490">490</span>
+<span id="491">491</span>
+<span id="492">492</span>
+<span id="493">493</span>
+<span id="494">494</span>
+<span id="495">495</span>
+<span id="496">496</span>
+<span id="497">497</span>
+<span id="498">498</span>
+<span id="499">499</span>
+<span id="500">500</span>
+<span id="501">501</span>
+<span id="502">502</span>
+<span id="503">503</span>
+<span id="504">504</span>
+<span id="505">505</span>
+<span id="506">506</span>
+<span id="507">507</span>
+<span id="508">508</span>
+<span id="509">509</span>
+<span id="510">510</span>
+<span id="511">511</span>
+<span id="512">512</span>
+<span id="513">513</span>
+<span id="514">514</span>
+<span id="515">515</span>
+<span id="516">516</span>
+<span id="517">517</span>
+<span id="518">518</span>
+<span id="519">519</span>
+<span id="520">520</span>
+<span id="521">521</span>
+<span id="522">522</span>
+<span id="523">523</span>
+<span id="524">524</span>
+<span id="525">525</span>
+<span id="526">526</span>
+<span id="527">527</span>
+<span id="528">528</span>
+<span id="529">529</span>
+<span id="530">530</span>
+<span id="531">531</span>
+<span id="532">532</span>
+<span id="533">533</span>
+<span id="534">534</span>
+<span id="535">535</span>
+<span id="536">536</span>
+<span id="537">537</span>
+<span id="538">538</span>
+<span id="539">539</span>
+<span id="540">540</span>
+<span id="541">541</span>
+<span id="542">542</span>
+<span id="543">543</span>
+<span id="544">544</span>
+<span id="545">545</span>
+<span id="546">546</span>
+<span id="547">547</span>
+<span id="548">548</span>
+<span id="549">549</span>
+<span id="550">550</span>
+<span id="551">551</span>
+<span id="552">552</span>
+<span id="553">553</span>
+<span id="554">554</span>
+<span id="555">555</span>
+<span id="556">556</span>
+<span id="557">557</span>
+<span id="558">558</span>
+<span id="559">559</span>
+<span id="560">560</span>
+<span id="561">561</span>
+<span id="562">562</span>
+<span id="563">563</span>
+<span id="564">564</span>
+<span id="565">565</span>
+<span id="566">566</span>
+<span id="567">567</span>
+<span id="568">568</span>
+<span id="569">569</span>
+<span id="570">570</span>
+<span id="571">571</span>
+<span id="572">572</span>
+<span id="573">573</span>
+<span id="574">574</span>
+<span id="575">575</span>
+<span id="576">576</span>
+<span id="577">577</span>
+<span id="578">578</span>
+<span id="579">579</span>
+<span id="580">580</span>
+<span id="581">581</span>
+<span id="582">582</span>
+<span id="583">583</span>
+<span id="584">584</span>
+<span id="585">585</span>
+<span id="586">586</span>
+<span id="587">587</span>
+<span id="588">588</span>
+<span id="589">589</span>
+<span id="590">590</span>
+<span id="591">591</span>
+<span id="592">592</span>
+<span id="593">593</span>
+<span id="594">594</span>
+<span id="595">595</span>
+<span id="596">596</span>
+<span id="597">597</span>
+<span id="598">598</span>
+<span id="599">599</span>
+<span id="600">600</span>
+<span id="601">601</span>
+<span id="602">602</span>
+<span id="603">603</span>
+<span id="604">604</span>
+<span id="605">605</span>
+<span id="606">606</span>
+<span id="607">607</span>
+<span id="608">608</span>
+<span id="609">609</span>
+<span id="610">610</span>
+<span id="611">611</span>
+<span id="612">612</span>
+<span id="613">613</span>
+<span id="614">614</span>
+<span id="615">615</span>
+<span id="616">616</span>
+<span id="617">617</span>
+<span id="618">618</span>
+<span id="619">619</span>
+<span id="620">620</span>
+<span id="621">621</span>
+<span id="622">622</span>
+<span id="623">623</span>
+<span id="624">624</span>
+<span id="625">625</span>
+<span id="626">626</span>
+<span id="627">627</span>
+<span id="628">628</span>
+<span id="629">629</span>
+<span id="630">630</span>
+<span id="631">631</span>
+<span id="632">632</span>
+<span id="633">633</span>
+<span id="634">634</span>
+<span id="635">635</span>
+<span id="636">636</span>
+<span id="637">637</span>
+<span id="638">638</span>
+<span id="639">639</span>
+<span id="640">640</span>
+<span id="641">641</span>
+<span id="642">642</span>
+<span id="643">643</span>
+<span id="644">644</span>
+<span id="645">645</span>
+<span id="646">646</span>
+<span id="647">647</span>
+<span id="648">648</span>
+<span id="649">649</span>
+<span id="650">650</span>
+<span id="651">651</span>
+<span id="652">652</span>
+<span id="653">653</span>
+<span id="654">654</span>
+<span id="655">655</span>
+<span id="656">656</span>
+<span id="657">657</span>
+<span id="658">658</span>
+<span id="659">659</span>
+<span id="660">660</span>
+<span id="661">661</span>
+<span id="662">662</span>
+<span id="663">663</span>
+<span id="664">664</span>
+<span id="665">665</span>
+<span id="666">666</span>
+<span id="667">667</span>
+<span id="668">668</span>
+<span id="669">669</span>
+<span id="670">670</span>
+<span id="671">671</span>
+<span id="672">672</span>
+<span id="673">673</span>
+<span id="674">674</span>
+<span id="675">675</span>
+<span id="676">676</span>
+<span id="677">677</span>
+<span id="678">678</span>
+<span id="679">679</span>
+<span id="680">680</span>
+<span id="681">681</span>
+<span id="682">682</span>
+<span id="683">683</span>
+<span id="684">684</span>
+<span id="685">685</span>
+<span id="686">686</span>
+<span id="687">687</span>
+<span id="688">688</span>
+<span id="689">689</span>
+<span id="690">690</span>
+<span id="691">691</span>
+<span id="692">692</span>
+<span id="693">693</span>
+<span id="694">694</span>
+<span id="695">695</span>
+<span id="696">696</span>
+<span id="697">697</span>
+<span id="698">698</span>
+<span id="699">699</span>
+<span id="700">700</span>
+<span id="701">701</span>
+<span id="702">702</span>
+<span id="703">703</span>
+<span id="704">704</span>
+<span id="705">705</span>
+<span id="706">706</span>
+<span id="707">707</span>
+<span id="708">708</span>
+<span id="709">709</span>
+<span id="710">710</span>
+<span id="711">711</span>
+<span id="712">712</span>
+<span id="713">713</span>
+<span id="714">714</span>
+<span id="715">715</span>
+<span id="716">716</span>
+<span id="717">717</span>
+<span id="718">718</span>
+<span id="719">719</span>
+<span id="720">720</span>
+<span id="721">721</span>
+<span id="722">722</span>
+<span id="723">723</span>
+<span id="724">724</span>
+<span id="725">725</span>
+<span id="726">726</span>
+<span id="727">727</span>
+<span id="728">728</span>
+<span id="729">729</span>
+<span id="730">730</span>
+<span id="731">731</span>
+<span id="732">732</span>
+<span id="733">733</span>
+<span id="734">734</span>
+<span id="735">735</span>
+<span id="736">736</span>
+<span id="737">737</span>
+<span id="738">738</span>
+<span id="739">739</span>
+<span id="740">740</span>
+<span id="741">741</span>
+<span id="742">742</span>
+<span id="743">743</span>
+<span id="744">744</span>
+<span id="745">745</span>
+<span id="746">746</span>
+<span id="747">747</span>
+<span id="748">748</span>
+<span id="749">749</span>
+<span id="750">750</span>
+<span id="751">751</span>
+<span id="752">752</span>
+<span id="753">753</span>
+<span id="754">754</span>
+<span id="755">755</span>
+<span id="756">756</span>
+<span id="757">757</span>
+<span id="758">758</span>
+<span id="759">759</span>
+<span id="760">760</span>
+<span id="761">761</span>
+<span id="762">762</span>
+<span id="763">763</span>
+<span id="764">764</span>
+<span id="765">765</span>
+<span id="766">766</span>
+<span id="767">767</span>
+<span id="768">768</span>
+<span id="769">769</span>
+<span id="770">770</span>
+<span id="771">771</span>
+<span id="772">772</span>
+<span id="773">773</span>
+<span id="774">774</span>
+<span id="775">775</span>
+<span id="776">776</span>
+<span id="777">777</span>
+<span id="778">778</span>
+<span id="779">779</span>
+<span id="780">780</span>
+<span id="781">781</span>
+<span id="782">782</span>
+<span id="783">783</span>
+<span id="784">784</span>
+<span id="785">785</span>
+<span id="786">786</span>
+<span id="787">787</span>
+<span id="788">788</span>
+<span id="789">789</span>
+<span id="790">790</span>
+<span id="791">791</span>
+<span id="792">792</span>
+<span id="793">793</span>
+<span id="794">794</span>
+<span id="795">795</span>
+<span id="796">796</span>
+<span id="797">797</span>
+<span id="798">798</span>
+<span id="799">799</span>
+<span id="800">800</span>
+<span id="801">801</span>
+<span id="802">802</span>
+<span id="803">803</span>
+<span id="804">804</span>
+<span id="805">805</span>
+<span id="806">806</span>
+<span id="807">807</span>
+<span id="808">808</span>
+<span id="809">809</span>
+<span id="810">810</span>
+<span id="811">811</span>
+<span id="812">812</span>
+<span id="813">813</span>
+<span id="814">814</span>
+<span id="815">815</span>
+<span id="816">816</span>
+<span id="817">817</span>
+<span id="818">818</span>
+<span id="819">819</span>
+<span id="820">820</span>
+<span id="821">821</span>
+<span id="822">822</span>
+<span id="823">823</span>
+<span id="824">824</span>
+<span id="825">825</span>
+<span id="826">826</span>
+<span id="827">827</span>
+<span id="828">828</span>
+<span id="829">829</span>
+<span id="830">830</span>
+<span id="831">831</span>
+<span id="832">832</span>
+<span id="833">833</span>
+<span id="834">834</span>
+<span id="835">835</span>
+<span id="836">836</span>
+<span id="837">837</span>
+<span id="838">838</span>
+<span id="839">839</span>
+<span id="840">840</span>
+<span id="841">841</span>
+<span id="842">842</span>
+<span id="843">843</span>
+<span id="844">844</span>
+<span id="845">845</span>
+<span id="846">846</span>
+<span id="847">847</span>
+<span id="848">848</span>
+<span id="849">849</span>
+<span id="850">850</span>
+<span id="851">851</span>
+<span id="852">852</span>
+<span id="853">853</span>
+<span id="854">854</span>
+<span id="855">855</span>
+<span id="856">856</span>
+<span id="857">857</span>
+<span id="858">858</span>
+<span id="859">859</span>
+<span id="860">860</span>
+<span id="861">861</span>
+</pre><pre class="rust"><code><span class="comment">// Don&#39;t throw clippy warnings for manual string stripping.
+// The suggested fix with `strip_prefix` removes support for Rust 1.33 and 1.38
+</span><span class="attribute">#![allow(clippy::manual_strip)]
+
+</span><span class="doccomment">//! Information about the networking layer.
+//!
+//! This module corresponds to the `/proc/net` directory and contains various information about the
+//! networking layer.
+//!
+//! # Example
+//!
+//! Here&#39;s an example that will print out all of the open and listening TCP sockets, and their
+//! corresponding processes, if know.  This mimics the &quot;netstat&quot; utility, but for TCP only.  You
+//! can run this example yourself with:
+//!
+//! &gt; cargo run --example=netstat
+//!
+//! ```rust
+//! # use procfs::process::{FDTarget, Stat};
+//! # use std::collections::HashMap;
+//! let all_procs = procfs::process::all_processes().unwrap();
+//!
+//! // build up a map between socket inodes and process stat info:
+//! let mut map: HashMap&lt;u64, Stat&gt; = HashMap::new();
+//! for p in all_procs {
+//!     let process = p.unwrap();
+//!     if let (Ok(stat), Ok(fds)) = (process.stat(), process.fd()) {
+//!         for fd in fds {
+//!             if let FDTarget::Socket(inode) = fd.unwrap().target {
+//!                 map.insert(inode, stat.clone());
+//!             }
+//!         }
+//!     }
+//! }
+//!
+//! // get the tcp table
+//! let tcp = procfs::net::tcp().unwrap();
+//! let tcp6 = procfs::net::tcp6().unwrap();
+//! println!(&quot;{:&lt;26} {:&lt;26} {:&lt;15} {:&lt;8} {}&quot;, &quot;Local address&quot;, &quot;Remote address&quot;, &quot;State&quot;, &quot;Inode&quot;, &quot;PID/Program name&quot;);
+//! for entry in tcp.into_iter().chain(tcp6) {
+//!     // find the process (if any) that has an open FD to this entry&#39;s inode
+//!     let local_address = format!(&quot;{}&quot;, entry.local_address);
+//!     let remote_addr = format!(&quot;{}&quot;, entry.remote_address);
+//!     let state = format!(&quot;{:?}&quot;, entry.state);
+//!     if let Some(stat) = map.get(&amp;entry.inode) {
+//!         println!(&quot;{:&lt;26} {:&lt;26} {:&lt;15} {:&lt;12} {}/{}&quot;, local_address, remote_addr, state, entry.inode, stat.pid, stat.comm);
+//!     } else {
+//!         // We might not always be able to find the process associated with this socket
+//!         println!(&quot;{:&lt;26} {:&lt;26} {:&lt;15} {:&lt;12} -&quot;, local_address, remote_addr, state, entry.inode);
+//!     }
+//! }
+</span><span class="kw">use </span><span class="kw">crate</span>::from_iter;
+<span class="kw">use </span><span class="kw">crate</span>::ProcResult;
+<span class="kw">use </span>std::collections::HashMap;
+
+<span class="kw">use </span><span class="kw">crate</span>::FileWrapper;
+<span class="kw">use </span>bitflags::bitflags;
+<span class="kw">use </span>byteorder::{ByteOrder, NativeEndian, NetworkEndian};
+<span class="kw">use </span>std::io::{BufRead, BufReader, Read};
+<span class="kw">use </span>std::net::{Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
+<span class="kw">use </span>std::{path::PathBuf, str::FromStr};
+
+<span class="attribute">#[cfg(feature = <span class="string">&quot;serde1&quot;</span>)]
+</span><span class="kw">use </span>serde::{Deserialize, Serialize};
+
+<span class="attribute">#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = <span class="string">&quot;serde1&quot;</span>, derive(Serialize, Deserialize))]
+</span><span class="kw">pub enum </span>TcpState {
+    Established = <span class="number">1</span>,
+    SynSent,
+    SynRecv,
+    FinWait1,
+    FinWait2,
+    TimeWait,
+    Close,
+    CloseWait,
+    LastAck,
+    Listen,
+    Closing,
+    NewSynRecv,
+}
+
+<span class="kw">impl </span>TcpState {
+    <span class="kw">pub fn </span>from_u8(num: u8) -&gt; <span class="prelude-ty">Option</span>&lt;TcpState&gt; {
+        <span class="kw">match </span>num {
+            <span class="number">0x01 </span>=&gt; <span class="prelude-val">Some</span>(TcpState::Established),
+            <span class="number">0x02 </span>=&gt; <span class="prelude-val">Some</span>(TcpState::SynSent),
+            <span class="number">0x03 </span>=&gt; <span class="prelude-val">Some</span>(TcpState::SynRecv),
+            <span class="number">0x04 </span>=&gt; <span class="prelude-val">Some</span>(TcpState::FinWait1),
+            <span class="number">0x05 </span>=&gt; <span class="prelude-val">Some</span>(TcpState::FinWait2),
+            <span class="number">0x06 </span>=&gt; <span class="prelude-val">Some</span>(TcpState::TimeWait),
+            <span class="number">0x07 </span>=&gt; <span class="prelude-val">Some</span>(TcpState::Close),
+            <span class="number">0x08 </span>=&gt; <span class="prelude-val">Some</span>(TcpState::CloseWait),
+            <span class="number">0x09 </span>=&gt; <span class="prelude-val">Some</span>(TcpState::LastAck),
+            <span class="number">0x0A </span>=&gt; <span class="prelude-val">Some</span>(TcpState::Listen),
+            <span class="number">0x0B </span>=&gt; <span class="prelude-val">Some</span>(TcpState::Closing),
+            <span class="number">0x0C </span>=&gt; <span class="prelude-val">Some</span>(TcpState::NewSynRecv),
+            <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
+        }
+    }
+
+    <span class="kw">pub fn </span>to_u8(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u8 {
+        <span class="kw">match </span><span class="self">self </span>{
+            TcpState::Established =&gt; <span class="number">0x01</span>,
+            TcpState::SynSent =&gt; <span class="number">0x02</span>,
+            TcpState::SynRecv =&gt; <span class="number">0x03</span>,
+            TcpState::FinWait1 =&gt; <span class="number">0x04</span>,
+            TcpState::FinWait2 =&gt; <span class="number">0x05</span>,
+            TcpState::TimeWait =&gt; <span class="number">0x06</span>,
+            TcpState::Close =&gt; <span class="number">0x07</span>,
+            TcpState::CloseWait =&gt; <span class="number">0x08</span>,
+            TcpState::LastAck =&gt; <span class="number">0x09</span>,
+            TcpState::Listen =&gt; <span class="number">0x0A</span>,
+            TcpState::Closing =&gt; <span class="number">0x0B</span>,
+            TcpState::NewSynRecv =&gt; <span class="number">0x0C</span>,
+        }
+    }
+}
+
+<span class="attribute">#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = <span class="string">&quot;serde1&quot;</span>, derive(Serialize, Deserialize))]
+</span><span class="kw">pub enum </span>UdpState {
+    Established = <span class="number">1</span>,
+    Close = <span class="number">7</span>,
+}
+
+<span class="kw">impl </span>UdpState {
+    <span class="kw">pub fn </span>from_u8(num: u8) -&gt; <span class="prelude-ty">Option</span>&lt;UdpState&gt; {
+        <span class="kw">match </span>num {
+            <span class="number">0x01 </span>=&gt; <span class="prelude-val">Some</span>(UdpState::Established),
+            <span class="number">0x07 </span>=&gt; <span class="prelude-val">Some</span>(UdpState::Close),
+            <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
+        }
+    }
+
+    <span class="kw">pub fn </span>to_u8(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u8 {
+        <span class="kw">match </span><span class="self">self </span>{
+            UdpState::Established =&gt; <span class="number">0x01</span>,
+            UdpState::Close =&gt; <span class="number">0x07</span>,
+        }
+    }
+}
+
+<span class="attribute">#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = <span class="string">&quot;serde1&quot;</span>, derive(Serialize, Deserialize))]
+</span><span class="kw">pub enum </span>UnixState {
+    UNCONNECTED = <span class="number">1</span>,
+    CONNECTING = <span class="number">2</span>,
+    CONNECTED = <span class="number">3</span>,
+    DISCONNECTING = <span class="number">4</span>,
+}
+
+<span class="kw">impl </span>UnixState {
+    <span class="kw">pub fn </span>from_u8(num: u8) -&gt; <span class="prelude-ty">Option</span>&lt;UnixState&gt; {
+        <span class="kw">match </span>num {
+            <span class="number">0x01 </span>=&gt; <span class="prelude-val">Some</span>(UnixState::UNCONNECTED),
+            <span class="number">0x02 </span>=&gt; <span class="prelude-val">Some</span>(UnixState::CONNECTING),
+            <span class="number">0x03 </span>=&gt; <span class="prelude-val">Some</span>(UnixState::CONNECTED),
+            <span class="number">0x04 </span>=&gt; <span class="prelude-val">Some</span>(UnixState::DISCONNECTING),
+            <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
+        }
+    }
+
+    <span class="kw">pub fn </span>to_u8(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u8 {
+        <span class="kw">match </span><span class="self">self </span>{
+            UnixState::UNCONNECTED =&gt; <span class="number">0x01</span>,
+            UnixState::CONNECTING =&gt; <span class="number">0x02</span>,
+            UnixState::CONNECTED =&gt; <span class="number">0x03</span>,
+            UnixState::DISCONNECTING =&gt; <span class="number">0x04</span>,
+        }
+    }
+}
+
+<span class="doccomment">/// An entry in the TCP socket table
+</span><span class="attribute">#[derive(Debug, Clone)]
+#[non_exhaustive]
+#[cfg_attr(feature = <span class="string">&quot;serde1&quot;</span>, derive(Serialize, Deserialize))]
+</span><span class="kw">pub struct </span>TcpNetEntry {
+    <span class="kw">pub </span>local_address: SocketAddr,
+    <span class="kw">pub </span>remote_address: SocketAddr,
+    <span class="kw">pub </span>state: TcpState,
+    <span class="kw">pub </span>rx_queue: u32,
+    <span class="kw">pub </span>tx_queue: u32,
+    <span class="kw">pub </span>uid: u32,
+    <span class="kw">pub </span>inode: u64,
+}
+
+<span class="doccomment">/// An entry in the UDP socket table
+</span><span class="attribute">#[derive(Debug, Clone)]
+#[non_exhaustive]
+#[cfg_attr(feature = <span class="string">&quot;serde1&quot;</span>, derive(Serialize, Deserialize))]
+</span><span class="kw">pub struct </span>UdpNetEntry {
+    <span class="kw">pub </span>local_address: SocketAddr,
+    <span class="kw">pub </span>remote_address: SocketAddr,
+    <span class="kw">pub </span>state: UdpState,
+    <span class="kw">pub </span>rx_queue: u32,
+    <span class="kw">pub </span>tx_queue: u32,
+    <span class="kw">pub </span>uid: u32,
+    <span class="kw">pub </span>inode: u64,
+}
+
+<span class="doccomment">/// An entry in the Unix socket table
+</span><span class="attribute">#[derive(Debug, Clone)]
+#[non_exhaustive]
+#[cfg_attr(feature = <span class="string">&quot;serde1&quot;</span>, derive(Serialize, Deserialize))]
+</span><span class="kw">pub struct </span>UnixNetEntry {
+    <span class="doccomment">/// The number of users of the socket
+    </span><span class="kw">pub </span>ref_count: u32,
+    <span class="doccomment">/// The socket type.
+    ///
+    /// Possible values are `SOCK_STREAM`, `SOCK_DGRAM`, or `SOCK_SEQPACKET`.  These constants can
+    /// be found in the libc crate.
+    </span><span class="kw">pub </span>socket_type: u16,
+    <span class="doccomment">/// The state of the socket
+    </span><span class="kw">pub </span>state: UnixState,
+    <span class="doccomment">/// The inode number of the socket
+    </span><span class="kw">pub </span>inode: u64,
+    <span class="doccomment">/// The bound pathname (if any) of the socket.
+    ///
+    /// Sockets in the abstract namespace are included, and are shown with a path that commences
+    /// with the &#39;@&#39; character.
+    </span><span class="kw">pub </span>path: <span class="prelude-ty">Option</span>&lt;PathBuf&gt;,
+}
+
+<span class="doccomment">/// Parses an address in the form 00010203:1234
+///
+/// Also supports IPv6
+</span><span class="kw">fn </span>parse_addressport_str(s: <span class="kw-2">&amp;</span>str) -&gt; ProcResult&lt;SocketAddr&gt; {
+    <span class="kw">let </span><span class="kw-2">mut </span>las = s.split(<span class="string">&#39;:&#39;</span>);
+    <span class="kw">let </span>ip_part = <span class="macro">expect!</span>(las.next(), <span class="string">&quot;ip_part&quot;</span>);
+    <span class="kw">let </span>port = <span class="macro">expect!</span>(las.next(), <span class="string">&quot;port&quot;</span>);
+    <span class="kw">let </span>port = <span class="macro">from_str!</span>(u16, port, <span class="number">16</span>);
+
+    <span class="kw">if </span>ip_part.len() == <span class="number">8 </span>{
+        <span class="kw">let </span>bytes = <span class="macro">expect!</span>(hex::decode(ip_part));
+        <span class="kw">let </span>ip_u32 = NetworkEndian::read_u32(<span class="kw-2">&amp;</span>bytes);
+
+        <span class="kw">let </span>ip = Ipv4Addr::new(
+            (ip_u32 &amp; <span class="number">0xff</span>) <span class="kw">as </span>u8,
+            ((ip_u32 &amp; <span class="number">0xff </span>&lt;&lt; <span class="number">8</span>) &gt;&gt; <span class="number">8</span>) <span class="kw">as </span>u8,
+            ((ip_u32 &amp; <span class="number">0xff </span>&lt;&lt; <span class="number">16</span>) &gt;&gt; <span class="number">16</span>) <span class="kw">as </span>u8,
+            ((ip_u32 &amp; <span class="number">0xff </span>&lt;&lt; <span class="number">24</span>) &gt;&gt; <span class="number">24</span>) <span class="kw">as </span>u8,
+        );
+
+        <span class="prelude-val">Ok</span>(SocketAddr::V4(SocketAddrV4::new(ip, port)))
+    } <span class="kw">else if </span>ip_part.len() == <span class="number">32 </span>{
+        <span class="kw">let </span>bytes = <span class="macro">expect!</span>(hex::decode(ip_part));
+
+        <span class="kw">let </span>ip_a = NativeEndian::read_u32(<span class="kw-2">&amp;</span>bytes[<span class="number">0</span>..]);
+        <span class="kw">let </span>ip_b = NativeEndian::read_u32(<span class="kw-2">&amp;</span>bytes[<span class="number">4</span>..]);
+        <span class="kw">let </span>ip_c = NativeEndian::read_u32(<span class="kw-2">&amp;</span>bytes[<span class="number">8</span>..]);
+        <span class="kw">let </span>ip_d = NativeEndian::read_u32(<span class="kw-2">&amp;</span>bytes[<span class="number">12</span>..]);
+
+        <span class="kw">let </span>ip = Ipv6Addr::new(
+            ((ip_a &gt;&gt; <span class="number">16</span>) &amp; <span class="number">0xffff</span>) <span class="kw">as </span>u16,
+            (ip_a &amp; <span class="number">0xffff</span>) <span class="kw">as </span>u16,
+            ((ip_b &gt;&gt; <span class="number">16</span>) &amp; <span class="number">0xffff</span>) <span class="kw">as </span>u16,
+            (ip_b &amp; <span class="number">0xffff</span>) <span class="kw">as </span>u16,
+            ((ip_c &gt;&gt; <span class="number">16</span>) &amp; <span class="number">0xffff</span>) <span class="kw">as </span>u16,
+            (ip_c &amp; <span class="number">0xffff</span>) <span class="kw">as </span>u16,
+            ((ip_d &gt;&gt; <span class="number">16</span>) &amp; <span class="number">0xffff</span>) <span class="kw">as </span>u16,
+            (ip_d &amp; <span class="number">0xffff</span>) <span class="kw">as </span>u16,
+        );
+
+        <span class="prelude-val">Ok</span>(SocketAddr::V6(SocketAddrV6::new(ip, port, <span class="number">0</span>, <span class="number">0</span>)))
+    } <span class="kw">else </span>{
+        <span class="prelude-val">Err</span>(<span class="macro">build_internal_error!</span>(<span class="macro">format!</span>(
+            <span class="string">&quot;Unable to parse {:?} as an address:port&quot;</span>,
+            s
+        )))
+    }
+}
+
+<span class="doccomment">/// Reads TCP socket table from the provided `reader`.
+</span><span class="kw">pub fn </span>read_tcp_table&lt;R: Read&gt;(reader: BufReader&lt;R&gt;) -&gt; ProcResult&lt;Vec&lt;TcpNetEntry&gt;&gt; {
+    <span class="kw">let </span><span class="kw-2">mut </span>vec = Vec::new();
+
+    <span class="comment">// first line is a header we need to skip
+    </span><span class="kw">for </span>line <span class="kw">in </span>reader.lines().skip(<span class="number">1</span>) {
+        <span class="kw">let </span>line = line<span class="question-mark">?</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>s = line.split_whitespace();
+        s.next();
+        <span class="kw">let </span>local_address = <span class="macro">expect!</span>(s.next(), <span class="string">&quot;tcp::local_address&quot;</span>);
+        <span class="kw">let </span>rem_address = <span class="macro">expect!</span>(s.next(), <span class="string">&quot;tcp::rem_address&quot;</span>);
+        <span class="kw">let </span>state = <span class="macro">expect!</span>(s.next(), <span class="string">&quot;tcp::st&quot;</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>tx_rx_queue = <span class="macro">expect!</span>(s.next(), <span class="string">&quot;tcp::tx_queue:rx_queue&quot;</span>).splitn(<span class="number">2</span>, <span class="string">&#39;:&#39;</span>);
+        <span class="kw">let </span>tx_queue = <span class="macro">from_str!</span>(u32, <span class="macro">expect!</span>(tx_rx_queue.next(), <span class="string">&quot;tcp::tx_queue&quot;</span>), <span class="number">16</span>);
+        <span class="kw">let </span>rx_queue = <span class="macro">from_str!</span>(u32, <span class="macro">expect!</span>(tx_rx_queue.next(), <span class="string">&quot;tcp::rx_queue&quot;</span>), <span class="number">16</span>);
+        s.next(); <span class="comment">// skip tr and tm-&gt;when
+        </span>s.next(); <span class="comment">// skip retrnsmt
+        </span><span class="kw">let </span>uid = <span class="macro">from_str!</span>(u32, <span class="macro">expect!</span>(s.next(), <span class="string">&quot;tcp::uid&quot;</span>));
+        s.next(); <span class="comment">// skip timeout
+        </span><span class="kw">let </span>inode = <span class="macro">expect!</span>(s.next(), <span class="string">&quot;tcp::inode&quot;</span>);
+
+        vec.push(TcpNetEntry {
+            local_address: parse_addressport_str(local_address)<span class="question-mark">?</span>,
+            remote_address: parse_addressport_str(rem_address)<span class="question-mark">?</span>,
+            rx_queue,
+            tx_queue,
+            state: <span class="macro">expect!</span>(TcpState::from_u8(<span class="macro">from_str!</span>(u8, state, <span class="number">16</span>))),
+            uid,
+            inode: <span class="macro">from_str!</span>(u64, inode),
+        });
+    }
+
+    <span class="prelude-val">Ok</span>(vec)
+}
+
+<span class="doccomment">/// Reads UDP socket table from the provided `reader`.
+</span><span class="kw">pub fn </span>read_udp_table&lt;R: Read&gt;(reader: BufReader&lt;R&gt;) -&gt; ProcResult&lt;Vec&lt;UdpNetEntry&gt;&gt; {
+    <span class="kw">let </span><span class="kw-2">mut </span>vec = Vec::new();
+
+    <span class="comment">// first line is a header we need to skip
+    </span><span class="kw">for </span>line <span class="kw">in </span>reader.lines().skip(<span class="number">1</span>) {
+        <span class="kw">let </span>line = line<span class="question-mark">?</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>s = line.split_whitespace();
+        s.next();
+        <span class="kw">let </span>local_address = <span class="macro">expect!</span>(s.next(), <span class="string">&quot;udp::local_address&quot;</span>);
+        <span class="kw">let </span>rem_address = <span class="macro">expect!</span>(s.next(), <span class="string">&quot;udp::rem_address&quot;</span>);
+        <span class="kw">let </span>state = <span class="macro">expect!</span>(s.next(), <span class="string">&quot;udp::st&quot;</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>tx_rx_queue = <span class="macro">expect!</span>(s.next(), <span class="string">&quot;udp::tx_queue:rx_queue&quot;</span>).splitn(<span class="number">2</span>, <span class="string">&#39;:&#39;</span>);
+        <span class="kw">let </span>tx_queue: u32 = <span class="macro">from_str!</span>(u32, <span class="macro">expect!</span>(tx_rx_queue.next(), <span class="string">&quot;udp::tx_queue&quot;</span>), <span class="number">16</span>);
+        <span class="kw">let </span>rx_queue: u32 = <span class="macro">from_str!</span>(u32, <span class="macro">expect!</span>(tx_rx_queue.next(), <span class="string">&quot;udp::rx_queue&quot;</span>), <span class="number">16</span>);
+        s.next(); <span class="comment">// skip tr and tm-&gt;when
+        </span>s.next(); <span class="comment">// skip retrnsmt
+        </span><span class="kw">let </span>uid = <span class="macro">from_str!</span>(u32, <span class="macro">expect!</span>(s.next(), <span class="string">&quot;udp::uid&quot;</span>));
+        s.next(); <span class="comment">// skip timeout
+        </span><span class="kw">let </span>inode = <span class="macro">expect!</span>(s.next(), <span class="string">&quot;udp::inode&quot;</span>);
+
+        vec.push(UdpNetEntry {
+            local_address: parse_addressport_str(local_address)<span class="question-mark">?</span>,
+            remote_address: parse_addressport_str(rem_address)<span class="question-mark">?</span>,
+            rx_queue,
+            tx_queue,
+            state: <span class="macro">expect!</span>(UdpState::from_u8(<span class="macro">from_str!</span>(u8, state, <span class="number">16</span>))),
+            uid,
+            inode: <span class="macro">from_str!</span>(u64, inode),
+        });
+    }
+
+    <span class="prelude-val">Ok</span>(vec)
+}
+
+<span class="doccomment">/// Reads the tcp socket table
+///
+/// Note that this is the socket table for the current progress.  If you want to
+/// see the socket table for another process, then see [Process::tcp()](crate::process::Process::tcp())
+</span><span class="kw">pub fn </span>tcp() -&gt; ProcResult&lt;Vec&lt;TcpNetEntry&gt;&gt; {
+    <span class="kw">let </span>file = FileWrapper::open(<span class="string">&quot;/proc/net/tcp&quot;</span>)<span class="question-mark">?</span>;
+
+    read_tcp_table(BufReader::new(file))
+}
+
+<span class="doccomment">/// Reads the tcp6 socket table
+///
+/// Note that this is the socket table for the current progress.  If you want to
+/// see the socket table for another process, then see [Process::tcp6()](crate::process::Process::tcp6())
+</span><span class="kw">pub fn </span>tcp6() -&gt; ProcResult&lt;Vec&lt;TcpNetEntry&gt;&gt; {
+    <span class="kw">let </span>file = FileWrapper::open(<span class="string">&quot;/proc/net/tcp6&quot;</span>)<span class="question-mark">?</span>;
+
+    read_tcp_table(BufReader::new(file))
+}
+
+<span class="doccomment">/// Reads the udp socket table
+///
+/// Note that this is the socket table for the current progress.  If you want to
+/// see the socket table for another process, then see [Process::udp()](crate::process::Process::udp())
+</span><span class="kw">pub fn </span>udp() -&gt; ProcResult&lt;Vec&lt;UdpNetEntry&gt;&gt; {
+    <span class="kw">let </span>file = FileWrapper::open(<span class="string">&quot;/proc/net/udp&quot;</span>)<span class="question-mark">?</span>;
+
+    read_udp_table(BufReader::new(file))
+}
+
+<span class="doccomment">/// Reads the udp6 socket table
+///
+/// Note that this is the socket table for the current progress.  If you want to
+/// see the socket table for another process, then see [Process::udp6()](crate::process::Process::udp6())
+</span><span class="kw">pub fn </span>udp6() -&gt; ProcResult&lt;Vec&lt;UdpNetEntry&gt;&gt; {
+    <span class="kw">let </span>file = FileWrapper::open(<span class="string">&quot;/proc/net/udp6&quot;</span>)<span class="question-mark">?</span>;
+
+    read_udp_table(BufReader::new(file))
+}
+
+<span class="doccomment">/// Reads the unix socket table
+///
+/// Note that this is the socket table for the current progress.  If you want to
+/// see the socket table for another process, then see [Process::unix()](crate::process::Process::unix())
+</span><span class="kw">pub fn </span>unix() -&gt; ProcResult&lt;Vec&lt;UnixNetEntry&gt;&gt; {
+    <span class="kw">let </span>file = FileWrapper::open(<span class="string">&quot;/proc/net/unix&quot;</span>)<span class="question-mark">?</span>;
+    unix_from_reader(file)
+}
+
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>unix_from_reader(file: <span class="kw">impl </span>Read) -&gt; ProcResult&lt;Vec&lt;UnixNetEntry&gt;&gt; {
+    <span class="kw">let </span>reader = BufReader::new(file);
+
+    <span class="kw">let </span><span class="kw-2">mut </span>vec = Vec::new();
+
+    <span class="comment">// first line is a header we need to skip
+    </span><span class="kw">for </span>line <span class="kw">in </span>reader.lines().skip(<span class="number">1</span>) {
+        <span class="kw">let </span>line = line<span class="question-mark">?</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>s = line.split_whitespace();
+        s.next(); <span class="comment">// skip table slot number
+        </span><span class="kw">let </span>ref_count = <span class="macro">from_str!</span>(u32, <span class="macro">expect!</span>(s.next()), <span class="number">16</span>);
+        s.next(); <span class="comment">// skip protocol, always zero
+        </span>s.next(); <span class="comment">// skip internal kernel flags
+        </span><span class="kw">let </span>socket_type = <span class="macro">from_str!</span>(u16, <span class="macro">expect!</span>(s.next()), <span class="number">16</span>);
+        <span class="kw">let </span>state = <span class="macro">from_str!</span>(u8, <span class="macro">expect!</span>(s.next()), <span class="number">16</span>);
+        <span class="kw">let </span>inode = <span class="macro">from_str!</span>(u64, <span class="macro">expect!</span>(s.next()));
+        <span class="kw">let </span>path = s.next().map(PathBuf::from);
+
+        vec.push(UnixNetEntry {
+            ref_count,
+            socket_type,
+            inode,
+            state: <span class="macro">expect!</span>(UnixState::from_u8(state)),
+            path,
+        });
+    }
+
+    <span class="prelude-val">Ok</span>(vec)
+}
+
+<span class="doccomment">/// An entry in the ARP table
+</span><span class="attribute">#[derive(Debug, Clone)]
+#[cfg_attr(feature = <span class="string">&quot;serde1&quot;</span>, derive(Serialize, Deserialize))]
+</span><span class="kw">pub struct </span>ARPEntry {
+    <span class="doccomment">/// IPv4 address
+    </span><span class="kw">pub </span>ip_address: Ipv4Addr,
+    <span class="doccomment">/// Hardware type
+    ///
+    /// This will almost always be ETHER (or maybe INFINIBAND)
+    </span><span class="kw">pub </span>hw_type: ARPHardware,
+    <span class="doccomment">/// Internal kernel flags
+    </span><span class="kw">pub </span>flags: ARPFlags,
+    <span class="doccomment">/// MAC Address
+    </span><span class="kw">pub </span>hw_address: <span class="prelude-ty">Option</span>&lt;[u8; <span class="number">6</span>]&gt;,
+    <span class="doccomment">/// Device name
+    </span><span class="kw">pub </span>device: String,
+}
+
+<span class="macro">bitflags! </span>{
+    <span class="doccomment">/// Hardware type for an ARP table entry.
+    </span><span class="comment">// source: include/uapi/linux/if_arp.h
+    </span><span class="attribute">#[cfg_attr(feature = <span class="string">&quot;serde1&quot;</span>, derive(Serialize, Deserialize))]
+    </span><span class="kw">pub struct </span>ARPHardware: u32 {
+        <span class="doccomment">/// NET/ROM pseudo
+        </span><span class="kw">const </span>NETROM = <span class="number">0</span>;
+        <span class="doccomment">/// Ethernet
+        </span><span class="kw">const </span>ETHER = <span class="number">1</span>;
+        <span class="doccomment">/// Experimental ethernet
+        </span><span class="kw">const </span>EETHER = <span class="number">2</span>;
+        <span class="doccomment">/// AX.25 Level 2
+        </span><span class="kw">const </span>AX25 = <span class="number">3</span>;
+        <span class="doccomment">/// PROnet token ring
+        </span><span class="kw">const </span>PRONET = <span class="number">4</span>;
+        <span class="doccomment">/// Chaosnet
+        </span><span class="kw">const </span>CHAOS = <span class="number">5</span>;
+        <span class="doccomment">/// IEEE 802.2 Ethernet/TR/TB
+        </span><span class="kw">const </span>IEEE802 = <span class="number">6</span>;
+        <span class="doccomment">/// Arcnet
+        </span><span class="kw">const </span>ARCNET = <span class="number">7</span>;
+        <span class="doccomment">/// APPLEtalk
+        </span><span class="kw">const </span>APPLETLK = <span class="number">8</span>;
+        <span class="doccomment">/// Frame Relay DLCI
+        </span><span class="kw">const </span>DLCI = <span class="number">15</span>;
+        <span class="doccomment">/// ATM
+        </span><span class="kw">const </span>ATM = <span class="number">19</span>;
+        <span class="doccomment">/// Metricom STRIP
+        </span><span class="kw">const </span>METRICOM = <span class="number">23</span>;
+        <span class="comment">//// IEEE 1394 IPv4 - RFC 2734
+        </span><span class="kw">const </span>IEEE1394 = <span class="number">24</span>;
+        <span class="doccomment">/// EUI-64
+        </span><span class="kw">const </span>EUI64 = <span class="number">27</span>;
+        <span class="doccomment">/// InfiniBand
+        </span><span class="kw">const </span>INFINIBAND = <span class="number">32</span>;
+    }
+}
+
+<span class="macro">bitflags! </span>{
+    <span class="doccomment">/// Flags for ARP entries
+    </span><span class="comment">// source: include/uapi/linux/if_arp.h
+    </span><span class="attribute">#[cfg_attr(feature = <span class="string">&quot;serde1&quot;</span>, derive(Serialize, Deserialize))]
+    </span><span class="kw">pub struct </span>ARPFlags: u32 {
+            <span class="doccomment">/// Completed entry
+            </span><span class="kw">const </span>COM = <span class="number">0x02</span>;
+            <span class="doccomment">/// Permanent entry
+            </span><span class="kw">const </span>PERM = <span class="number">0x04</span>;
+            <span class="doccomment">/// Publish entry
+            </span><span class="kw">const </span>PUBL = <span class="number">0x08</span>;
+            <span class="doccomment">/// Has requested trailers
+            </span><span class="kw">const </span>USETRAILERS = <span class="number">0x10</span>;
+            <span class="doccomment">/// Want to use a netmask (only for proxy entries)
+            </span><span class="kw">const </span>NETMASK = <span class="number">0x20</span>;
+            <span class="comment">// Don&#39;t answer this address
+            </span><span class="kw">const </span>DONTPUB = <span class="number">0x40</span>;
+    }
+}
+
+<span class="doccomment">/// Reads the ARP table
+///
+/// Note that this is the ARP table for the current progress.  If you want to
+/// see the ARP table for another process, then see [Process::arp()](crate::process::Process::arp())
+</span><span class="kw">pub fn </span>arp() -&gt; ProcResult&lt;Vec&lt;ARPEntry&gt;&gt; {
+    <span class="kw">let </span>file = FileWrapper::open(<span class="string">&quot;/proc/net/arp&quot;</span>)<span class="question-mark">?</span>;
+    arp_from_reader(file)
+}
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>arp_from_reader(file: <span class="kw">impl </span>Read) -&gt; ProcResult&lt;Vec&lt;ARPEntry&gt;&gt; {
+    <span class="kw">let </span>reader = BufReader::new(file);
+
+    <span class="kw">let </span><span class="kw-2">mut </span>vec = Vec::new();
+
+    <span class="comment">// First line is a header we need to skip
+    </span><span class="kw">for </span>line <span class="kw">in </span>reader.lines().skip(<span class="number">1</span>) {
+        <span class="comment">// Check if there might have been an IO error.
+        </span><span class="kw">let </span>line = line<span class="question-mark">?</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>line = line.split_whitespace();
+        <span class="kw">let </span>ip_address = <span class="macro">expect!</span>(Ipv4Addr::from_str(<span class="macro">expect!</span>(line.next())));
+        <span class="kw">let </span>hw = <span class="macro">from_str!</span>(u32, <span class="kw-2">&amp;</span><span class="macro">expect!</span>(line.next())[<span class="number">2</span>..], <span class="number">16</span>);
+        <span class="kw">let </span>hw = ARPHardware::from_bits_truncate(hw);
+        <span class="kw">let </span>flags = <span class="macro">from_str!</span>(u32, <span class="kw-2">&amp;</span><span class="macro">expect!</span>(line.next())[<span class="number">2</span>..], <span class="number">16</span>);
+        <span class="kw">let </span>flags = ARPFlags::from_bits_truncate(flags);
+
+        <span class="kw">let </span>mac = <span class="macro">expect!</span>(line.next());
+        <span class="kw">let </span><span class="kw-2">mut </span>mac: Vec&lt;<span class="prelude-ty">Result</span>&lt;u8, <span class="kw">_</span>&gt;&gt; = mac.split(<span class="string">&#39;:&#39;</span>).map(|s| <span class="prelude-val">Ok</span>(<span class="macro">from_str!</span>(u8, s, <span class="number">16</span>))).collect();
+
+        <span class="kw">let </span>mac = <span class="kw">if </span>mac.len() == <span class="number">6 </span>{
+            <span class="kw">let </span>mac_block_f = mac.pop().unwrap()<span class="question-mark">?</span>;
+            <span class="kw">let </span>mac_block_e = mac.pop().unwrap()<span class="question-mark">?</span>;
+            <span class="kw">let </span>mac_block_d = mac.pop().unwrap()<span class="question-mark">?</span>;
+            <span class="kw">let </span>mac_block_c = mac.pop().unwrap()<span class="question-mark">?</span>;
+            <span class="kw">let </span>mac_block_b = mac.pop().unwrap()<span class="question-mark">?</span>;
+            <span class="kw">let </span>mac_block_a = mac.pop().unwrap()<span class="question-mark">?</span>;
+            <span class="kw">if </span>mac_block_a == <span class="number">0
+                </span>&amp;&amp; mac_block_b == <span class="number">0
+                </span>&amp;&amp; mac_block_c == <span class="number">0
+                </span>&amp;&amp; mac_block_d == <span class="number">0
+                </span>&amp;&amp; mac_block_e == <span class="number">0
+                </span>&amp;&amp; mac_block_f == <span class="number">0
+            </span>{
+                <span class="prelude-val">None
+            </span>} <span class="kw">else </span>{
+                <span class="prelude-val">Some</span>([
+                    mac_block_a,
+                    mac_block_b,
+                    mac_block_c,
+                    mac_block_d,
+                    mac_block_e,
+                    mac_block_f,
+                ])
+            }
+        } <span class="kw">else </span>{
+            <span class="prelude-val">None
+        </span>};
+
+        <span class="comment">// mask is always &quot;*&quot;
+        </span><span class="kw">let </span>_mask = <span class="macro">expect!</span>(line.next());
+        <span class="kw">let </span>dev = <span class="macro">expect!</span>(line.next());
+
+        vec.push(ARPEntry {
+            ip_address,
+            hw_type: hw,
+            flags,
+            hw_address: mac,
+            device: dev.to_string(),
+        })
+    }
+
+    <span class="prelude-val">Ok</span>(vec)
+}
+
+<span class="doccomment">/// General statistics for a network interface/device
+///
+/// For an example, see the [interface_stats.rs](https://github.com/eminence/procfs/tree/master/examples)
+/// example in the source repo.
+</span><span class="attribute">#[derive(Debug, Clone)]
+#[cfg_attr(feature = <span class="string">&quot;serde1&quot;</span>, derive(Serialize, Deserialize))]
+</span><span class="kw">pub struct </span>DeviceStatus {
+    <span class="doccomment">/// Name of the interface
+    </span><span class="kw">pub </span>name: String,
+    <span class="doccomment">/// Total bytes received
+    </span><span class="kw">pub </span>recv_bytes: u64,
+    <span class="doccomment">/// Total packets received
+    </span><span class="kw">pub </span>recv_packets: u64,
+    <span class="doccomment">/// Bad packets received
+    </span><span class="kw">pub </span>recv_errs: u64,
+    <span class="doccomment">/// Packets dropped
+    </span><span class="kw">pub </span>recv_drop: u64,
+    <span class="doccomment">/// Fifo overrun
+    </span><span class="kw">pub </span>recv_fifo: u64,
+    <span class="doccomment">/// Frame alignment errors
+    </span><span class="kw">pub </span>recv_frame: u64,
+    <span class="doccomment">/// Number of compressed packets received
+    </span><span class="kw">pub </span>recv_compressed: u64,
+    <span class="doccomment">/// Number of multicast packets received
+    </span><span class="kw">pub </span>recv_multicast: u64,
+
+    <span class="doccomment">/// Total bytes transmitted
+    </span><span class="kw">pub </span>sent_bytes: u64,
+    <span class="doccomment">/// Total packets transmitted
+    </span><span class="kw">pub </span>sent_packets: u64,
+    <span class="doccomment">/// Number of transmission errors
+    </span><span class="kw">pub </span>sent_errs: u64,
+    <span class="doccomment">/// Number of packets dropped during transmission
+    </span><span class="kw">pub </span>sent_drop: u64,
+    <span class="kw">pub </span>sent_fifo: u64,
+    <span class="doccomment">/// Number of collisions
+    </span><span class="kw">pub </span>sent_colls: u64,
+    <span class="doccomment">/// Number of packets not sent due to carrier errors
+    </span><span class="kw">pub </span>sent_carrier: u64,
+    <span class="doccomment">/// Number of compressed packets transmitted
+    </span><span class="kw">pub </span>sent_compressed: u64,
+}
+
+<span class="kw">impl </span>DeviceStatus {
+    <span class="kw">fn </span>from_str(s: <span class="kw-2">&amp;</span>str) -&gt; ProcResult&lt;DeviceStatus&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>split = s.split_whitespace();
+        <span class="kw">let </span>name: String = <span class="macro">expect!</span>(from_iter(<span class="kw-2">&amp;mut </span>split));
+        <span class="kw">let </span>recv_bytes = <span class="macro">expect!</span>(from_iter(<span class="kw-2">&amp;mut </span>split));
+        <span class="kw">let </span>recv_packets = <span class="macro">expect!</span>(from_iter(<span class="kw-2">&amp;mut </span>split));
+        <span class="kw">let </span>recv_errs = <span class="macro">expect!</span>(from_iter(<span class="kw-2">&amp;mut </span>split));
+        <span class="kw">let </span>recv_drop = <span class="macro">expect!</span>(from_iter(<span class="kw-2">&amp;mut </span>split));
+        <span class="kw">let </span>recv_fifo = <span class="macro">expect!</span>(from_iter(<span class="kw-2">&amp;mut </span>split));
+        <span class="kw">let </span>recv_frame = <span class="macro">expect!</span>(from_iter(<span class="kw-2">&amp;mut </span>split));
+        <span class="kw">let </span>recv_compressed = <span class="macro">expect!</span>(from_iter(<span class="kw-2">&amp;mut </span>split));
+        <span class="kw">let </span>recv_multicast = <span class="macro">expect!</span>(from_iter(<span class="kw-2">&amp;mut </span>split));
+        <span class="kw">let </span>sent_bytes = <span class="macro">expect!</span>(from_iter(<span class="kw-2">&amp;mut </span>split));
+        <span class="kw">let </span>sent_packets = <span class="macro">expect!</span>(from_iter(<span class="kw-2">&amp;mut </span>split));
+        <span class="kw">let </span>sent_errs = <span class="macro">expect!</span>(from_iter(<span class="kw-2">&amp;mut </span>split));
+        <span class="kw">let </span>sent_drop = <span class="macro">expect!</span>(from_iter(<span class="kw-2">&amp;mut </span>split));
+        <span class="kw">let </span>sent_fifo = <span class="macro">expect!</span>(from_iter(<span class="kw-2">&amp;mut </span>split));
+        <span class="kw">let </span>sent_colls = <span class="macro">expect!</span>(from_iter(<span class="kw-2">&amp;mut </span>split));
+        <span class="kw">let </span>sent_carrier = <span class="macro">expect!</span>(from_iter(<span class="kw-2">&amp;mut </span>split));
+        <span class="kw">let </span>sent_compressed = <span class="macro">expect!</span>(from_iter(<span class="kw-2">&amp;mut </span>split));
+
+        <span class="prelude-val">Ok</span>(DeviceStatus {
+            name: name.trim_end_matches(<span class="string">&#39;:&#39;</span>).to_owned(),
+            recv_bytes,
+            recv_packets,
+            recv_errs,
+            recv_drop,
+            recv_fifo,
+            recv_frame,
+            recv_compressed,
+            recv_multicast,
+            sent_bytes,
+            sent_packets,
+            sent_errs,
+            sent_drop,
+            sent_fifo,
+            sent_colls,
+            sent_carrier,
+            sent_compressed,
+        })
+    }
+}
+
+<span class="doccomment">/// Returns basic network device statistics for all interfaces
+///
+/// This data is from the `/proc/net/dev` file.
+///
+/// For an example, see the [interface_stats.rs](https://github.com/eminence/procfs/tree/master/examples)
+/// example in the source repo.
+///
+/// Note that this returns information from the networking namespace of the
+/// current process.  If you want information for some otherr process, see
+/// [Process::dev_status()](crate::process::Process::dev_status())
+</span><span class="kw">pub fn </span>dev_status() -&gt; ProcResult&lt;HashMap&lt;String, DeviceStatus&gt;&gt; {
+    <span class="kw">let </span>file = FileWrapper::open(<span class="string">&quot;/proc/net/dev&quot;</span>)<span class="question-mark">?</span>;
+
+    dev_status_from_reader(file)
+}
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>dev_status_from_reader(file: <span class="kw">impl </span>Read) -&gt; ProcResult&lt;HashMap&lt;String, DeviceStatus&gt;&gt; {
+    <span class="kw">let </span>buf = BufReader::new(file);
+    <span class="kw">let </span><span class="kw-2">mut </span>map = HashMap::new();
+    <span class="comment">// the first two lines are headers, so skip them
+    </span><span class="kw">for </span>line <span class="kw">in </span>buf.lines().skip(<span class="number">2</span>) {
+        <span class="kw">let </span>dev = DeviceStatus::from_str(<span class="kw-2">&amp;</span>line<span class="question-mark">?</span>)<span class="question-mark">?</span>;
+        map.insert(dev.name.clone(), dev);
+    }
+
+    <span class="prelude-val">Ok</span>(map)
+}
+
+<span class="doccomment">/// An entry in the ipv4 route table
+</span><span class="attribute">#[derive(Debug, Clone)]
+#[cfg_attr(feature = <span class="string">&quot;serde1&quot;</span>, derive(Serialize, Deserialize))]
+</span><span class="kw">pub struct </span>RouteEntry {
+    <span class="doccomment">/// Interface to which packets for this route will be sent
+    </span><span class="kw">pub </span>iface: String,
+    <span class="doccomment">/// The destination network or destination host
+    </span><span class="kw">pub </span>destination: Ipv4Addr,
+    <span class="kw">pub </span>gateway: Ipv4Addr,
+    <span class="kw">pub </span>flags: u16,
+    <span class="doccomment">/// Number of references to this route
+    </span><span class="kw">pub </span>refcnt: u16,
+    <span class="doccomment">/// Count of lookups for the route
+    </span><span class="kw">pub </span>in_use: u16,
+    <span class="doccomment">/// The &#39;distance&#39; to the target (usually counted in hops)
+    </span><span class="kw">pub </span>metrics: u32,
+    <span class="kw">pub </span>mask: Ipv4Addr,
+    <span class="doccomment">/// Default maximum transmission unit for TCP connections over this route
+    </span><span class="kw">pub </span>mtu: u32,
+    <span class="doccomment">/// Default window size for TCP connections over this route
+    </span><span class="kw">pub </span>window: u32,
+    <span class="doccomment">/// Initial RTT (Round Trip Time)
+    </span><span class="kw">pub </span>irtt: u32,
+}
+
+<span class="doccomment">/// Reads the ipv4 route table
+///
+/// This data is from the `/proc/net/route` file
+///
+/// Note that this returns information from the networking namespace of the
+/// current process.  If you want information for some other process, see
+/// [Process::route()](crate::process::Process::route())
+</span><span class="kw">pub fn </span>route() -&gt; ProcResult&lt;Vec&lt;RouteEntry&gt;&gt; {
+    <span class="kw">let </span>file = FileWrapper::open(<span class="string">&quot;/proc/net/route&quot;</span>)<span class="question-mark">?</span>;
+    route_from_reader(file)
+}
+
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>route_from_reader(file: <span class="kw">impl </span>Read) -&gt; ProcResult&lt;Vec&lt;RouteEntry&gt;&gt; {
+    <span class="kw">let </span>reader = BufReader::new(file);
+
+    <span class="kw">let </span><span class="kw-2">mut </span>vec = Vec::new();
+
+    <span class="comment">// First line is a header we need to skip
+    </span><span class="kw">for </span>line <span class="kw">in </span>reader.lines().skip(<span class="number">1</span>) {
+        <span class="comment">// Check if there might have been an IO error.
+        </span><span class="kw">let </span>line = line<span class="question-mark">?</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>line = line.split_whitespace();
+        <span class="comment">// network interface name, e.g. eth0
+        </span><span class="kw">let </span>iface = <span class="macro">expect!</span>(line.next());
+        <span class="kw">let </span>destination = <span class="macro">from_str!</span>(u32, <span class="macro">expect!</span>(line.next()), <span class="number">16</span>).to_ne_bytes().into();
+        <span class="kw">let </span>gateway = <span class="macro">from_str!</span>(u32, <span class="macro">expect!</span>(line.next()), <span class="number">16</span>).to_ne_bytes().into();
+        <span class="kw">let </span>flags = <span class="macro">from_str!</span>(u16, <span class="macro">expect!</span>(line.next()), <span class="number">16</span>);
+        <span class="kw">let </span>refcnt = <span class="macro">from_str!</span>(u16, <span class="macro">expect!</span>(line.next()), <span class="number">10</span>);
+        <span class="kw">let </span>in_use = <span class="macro">from_str!</span>(u16, <span class="macro">expect!</span>(line.next()), <span class="number">10</span>);
+        <span class="kw">let </span>metrics = <span class="macro">from_str!</span>(u32, <span class="macro">expect!</span>(line.next()), <span class="number">10</span>);
+        <span class="kw">let </span>mask = <span class="macro">from_str!</span>(u32, <span class="macro">expect!</span>(line.next()), <span class="number">16</span>).to_ne_bytes().into();
+        <span class="kw">let </span>mtu = <span class="macro">from_str!</span>(u32, <span class="macro">expect!</span>(line.next()), <span class="number">10</span>);
+        <span class="kw">let </span>window = <span class="macro">from_str!</span>(u32, <span class="macro">expect!</span>(line.next()), <span class="number">10</span>);
+        <span class="kw">let </span>irtt = <span class="macro">from_str!</span>(u32, <span class="macro">expect!</span>(line.next()), <span class="number">10</span>);
+        vec.push(RouteEntry {
+            iface: iface.to_string(),
+            destination,
+            gateway,
+            flags,
+            refcnt,
+            in_use,
+            metrics,
+            mask,
+            mtu,
+            window,
+            irtt,
+        });
+    }
+
+    <span class="prelude-val">Ok</span>(vec)
+}
+
+<span class="attribute">#[cfg(test)]
+</span><span class="kw">mod </span>tests {
+    <span class="kw">use super</span>::<span class="kw-2">*</span>;
+    <span class="kw">use </span>std::net::IpAddr;
+
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>test_parse_ipaddr() {
+        <span class="kw">use </span>std::str::FromStr;
+
+        <span class="kw">let </span>addr = parse_addressport_str(<span class="string">&quot;0100007F:1234&quot;</span>).unwrap();
+        <span class="macro">assert_eq!</span>(addr.port(), <span class="number">0x1234</span>);
+        <span class="kw">match </span>addr.ip() {
+            IpAddr::V4(addr) =&gt; <span class="macro">assert_eq!</span>(addr, Ipv4Addr::new(<span class="number">127</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span>)),
+            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Not IPv4&quot;</span>),
+        }
+
+        <span class="comment">// When you connect to [2a00:1450:4001:814::200e]:80 (ipv6.google.com) the entry with
+        // 5014002A14080140000000000E200000:0050 remote endpoint is created in /proc/net/tcp6
+        // on Linux 4.19.
+        </span><span class="kw">let </span>addr = parse_addressport_str(<span class="string">&quot;5014002A14080140000000000E200000:0050&quot;</span>).unwrap();
+        <span class="macro">assert_eq!</span>(addr.port(), <span class="number">80</span>);
+        <span class="kw">match </span>addr.ip() {
+            IpAddr::V6(addr) =&gt; <span class="macro">assert_eq!</span>(addr, Ipv6Addr::from_str(<span class="string">&quot;2a00:1450:4001:814::200e&quot;</span>).unwrap()),
+            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Not IPv6&quot;</span>),
+        }
+
+        <span class="comment">// IPv6 test case from https://stackoverflow.com/questions/41940483/parse-ipv6-addresses-from-proc-net-tcp6-python-2-7/41948004#41948004
+        </span><span class="kw">let </span>addr = parse_addressport_str(<span class="string">&quot;B80D01200000000067452301EFCDAB89:0&quot;</span>).unwrap();
+        <span class="macro">assert_eq!</span>(addr.port(), <span class="number">0</span>);
+        <span class="kw">match </span>addr.ip() {
+            IpAddr::V6(addr) =&gt; <span class="macro">assert_eq!</span>(addr, Ipv6Addr::from_str(<span class="string">&quot;2001:db8::123:4567:89ab:cdef&quot;</span>).unwrap()),
+            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Not IPv6&quot;</span>),
+        }
+
+        <span class="kw">let </span>addr = parse_addressport_str(<span class="string">&quot;1234:1234&quot;</span>);
+        <span class="macro">assert!</span>(addr.is_err());
+    }
+
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>test_tcpstate_from() {
+        <span class="macro">assert_eq!</span>(TcpState::from_u8(<span class="number">0xA</span>).unwrap(), TcpState::Listen);
+    }
+
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>test_tcp() {
+        <span class="kw">for </span>entry <span class="kw">in </span>tcp().unwrap() {
+            <span class="macro">println!</span>(<span class="string">&quot;{:?}&quot;</span>, entry);
+            <span class="macro">assert_eq!</span>(entry.state, TcpState::from_u8(entry.state.to_u8()).unwrap());
+        }
+    }
+
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>test_tcp6() {
+        <span class="kw">for </span>entry <span class="kw">in </span>tcp6().unwrap() {
+            <span class="macro">println!</span>(<span class="string">&quot;{:?}&quot;</span>, entry);
+            <span class="macro">assert_eq!</span>(entry.state, TcpState::from_u8(entry.state.to_u8()).unwrap());
+        }
+    }
+
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>test_udp() {
+        <span class="kw">for </span>entry <span class="kw">in </span>udp().unwrap() {
+            <span class="macro">println!</span>(<span class="string">&quot;{:?}&quot;</span>, entry);
+            <span class="macro">assert_eq!</span>(entry.state, UdpState::from_u8(entry.state.to_u8()).unwrap());
+        }
+    }
+
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>test_udp6() {
+        <span class="kw">for </span>entry <span class="kw">in </span>udp6().unwrap() {
+            <span class="macro">println!</span>(<span class="string">&quot;{:?}&quot;</span>, entry);
+        }
+    }
+
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>test_unix() {
+        <span class="kw">for </span>entry <span class="kw">in </span>unix().unwrap() {
+            <span class="macro">println!</span>(<span class="string">&quot;{:?}&quot;</span>, entry);
+        }
+    }
+
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>test_dev_status() {
+        <span class="kw">let </span>status = dev_status().unwrap();
+        <span class="macro">println!</span>(<span class="string">&quot;{:#?}&quot;</span>, status);
+    }
+
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>test_arp() {
+        <span class="kw">for </span>entry <span class="kw">in </span>arp().unwrap() {
+            <span class="macro">println!</span>(<span class="string">&quot;{:?}&quot;</span>, entry);
+        }
+    }
+
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>test_route() {
+        <span class="kw">for </span>entry <span class="kw">in </span>route().unwrap() {
+            <span class="macro">println!</span>(<span class="string">&quot;{:?}&quot;</span>, entry);
+        }
+    }
+}
+</code></pre></div>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="procfs" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0" ></div></body></html>

@@ -1,0 +1,314 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/seif/.cargo/registry/src/github.com-1ecc6299db9ec823/syscalls-0.6.9/src/errno/generated.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>generated.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../syscalls/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../syscalls/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../syscalls/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<span id="2">2</span>
+<span id="3">3</span>
+<span id="4">4</span>
+<span id="5">5</span>
+<span id="6">6</span>
+<span id="7">7</span>
+<span id="8">8</span>
+<span id="9">9</span>
+<span id="10">10</span>
+<span id="11">11</span>
+<span id="12">12</span>
+<span id="13">13</span>
+<span id="14">14</span>
+<span id="15">15</span>
+<span id="16">16</span>
+<span id="17">17</span>
+<span id="18">18</span>
+<span id="19">19</span>
+<span id="20">20</span>
+<span id="21">21</span>
+<span id="22">22</span>
+<span id="23">23</span>
+<span id="24">24</span>
+<span id="25">25</span>
+<span id="26">26</span>
+<span id="27">27</span>
+<span id="28">28</span>
+<span id="29">29</span>
+<span id="30">30</span>
+<span id="31">31</span>
+<span id="32">32</span>
+<span id="33">33</span>
+<span id="34">34</span>
+<span id="35">35</span>
+<span id="36">36</span>
+<span id="37">37</span>
+<span id="38">38</span>
+<span id="39">39</span>
+<span id="40">40</span>
+<span id="41">41</span>
+<span id="42">42</span>
+<span id="43">43</span>
+<span id="44">44</span>
+<span id="45">45</span>
+<span id="46">46</span>
+<span id="47">47</span>
+<span id="48">48</span>
+<span id="49">49</span>
+<span id="50">50</span>
+<span id="51">51</span>
+<span id="52">52</span>
+<span id="53">53</span>
+<span id="54">54</span>
+<span id="55">55</span>
+<span id="56">56</span>
+<span id="57">57</span>
+<span id="58">58</span>
+<span id="59">59</span>
+<span id="60">60</span>
+<span id="61">61</span>
+<span id="62">62</span>
+<span id="63">63</span>
+<span id="64">64</span>
+<span id="65">65</span>
+<span id="66">66</span>
+<span id="67">67</span>
+<span id="68">68</span>
+<span id="69">69</span>
+<span id="70">70</span>
+<span id="71">71</span>
+<span id="72">72</span>
+<span id="73">73</span>
+<span id="74">74</span>
+<span id="75">75</span>
+<span id="76">76</span>
+<span id="77">77</span>
+<span id="78">78</span>
+<span id="79">79</span>
+<span id="80">80</span>
+<span id="81">81</span>
+<span id="82">82</span>
+<span id="83">83</span>
+<span id="84">84</span>
+<span id="85">85</span>
+<span id="86">86</span>
+<span id="87">87</span>
+<span id="88">88</span>
+<span id="89">89</span>
+<span id="90">90</span>
+<span id="91">91</span>
+<span id="92">92</span>
+<span id="93">93</span>
+<span id="94">94</span>
+<span id="95">95</span>
+<span id="96">96</span>
+<span id="97">97</span>
+<span id="98">98</span>
+<span id="99">99</span>
+<span id="100">100</span>
+<span id="101">101</span>
+<span id="102">102</span>
+<span id="103">103</span>
+<span id="104">104</span>
+<span id="105">105</span>
+<span id="106">106</span>
+<span id="107">107</span>
+<span id="108">108</span>
+<span id="109">109</span>
+<span id="110">110</span>
+<span id="111">111</span>
+<span id="112">112</span>
+<span id="113">113</span>
+<span id="114">114</span>
+<span id="115">115</span>
+<span id="116">116</span>
+<span id="117">117</span>
+<span id="118">118</span>
+<span id="119">119</span>
+<span id="120">120</span>
+<span id="121">121</span>
+<span id="122">122</span>
+<span id="123">123</span>
+<span id="124">124</span>
+<span id="125">125</span>
+<span id="126">126</span>
+<span id="127">127</span>
+<span id="128">128</span>
+<span id="129">129</span>
+<span id="130">130</span>
+<span id="131">131</span>
+<span id="132">132</span>
+<span id="133">133</span>
+<span id="134">134</span>
+<span id="135">135</span>
+<span id="136">136</span>
+<span id="137">137</span>
+<span id="138">138</span>
+<span id="139">139</span>
+<span id="140">140</span>
+<span id="141">141</span>
+<span id="142">142</span>
+<span id="143">143</span>
+<span id="144">144</span>
+<span id="145">145</span>
+<span id="146">146</span>
+<span id="147">147</span>
+<span id="148">148</span>
+<span id="149">149</span>
+<span id="150">150</span>
+<span id="151">151</span>
+<span id="152">152</span>
+<span id="153">153</span>
+<span id="154">154</span>
+<span id="155">155</span>
+<span id="156">156</span>
+</pre><pre class="rust"><code><span class="comment">// This file is automatically generated. Do not edit!
+
+</span><span class="macro">errno_enum! </span>{
+    <span class="kw">pub enum </span>Errno {
+        EPERM(<span class="number">1</span>) = <span class="string">&quot;Operation not permitted&quot;</span>,
+        ENOENT(<span class="number">2</span>) = <span class="string">&quot;No such file or directory&quot;</span>,
+        ESRCH(<span class="number">3</span>) = <span class="string">&quot;No such process&quot;</span>,
+        EINTR(<span class="number">4</span>) = <span class="string">&quot;Interrupted system call&quot;</span>,
+        EIO(<span class="number">5</span>) = <span class="string">&quot;I/O error&quot;</span>,
+        ENXIO(<span class="number">6</span>) = <span class="string">&quot;No such device or address&quot;</span>,
+        E2BIG(<span class="number">7</span>) = <span class="string">&quot;Argument list too long&quot;</span>,
+        ENOEXEC(<span class="number">8</span>) = <span class="string">&quot;Exec format error&quot;</span>,
+        EBADF(<span class="number">9</span>) = <span class="string">&quot;Bad file number&quot;</span>,
+        ECHILD(<span class="number">10</span>) = <span class="string">&quot;No child processes&quot;</span>,
+        EAGAIN(<span class="number">11</span>) = <span class="string">&quot;Try again&quot;</span>,
+        ENOMEM(<span class="number">12</span>) = <span class="string">&quot;Out of memory&quot;</span>,
+        EACCES(<span class="number">13</span>) = <span class="string">&quot;Permission denied&quot;</span>,
+        EFAULT(<span class="number">14</span>) = <span class="string">&quot;Bad address&quot;</span>,
+        ENOTBLK(<span class="number">15</span>) = <span class="string">&quot;Block device required&quot;</span>,
+        EBUSY(<span class="number">16</span>) = <span class="string">&quot;Device or resource busy&quot;</span>,
+        EEXIST(<span class="number">17</span>) = <span class="string">&quot;File exists&quot;</span>,
+        EXDEV(<span class="number">18</span>) = <span class="string">&quot;Cross-device link&quot;</span>,
+        ENODEV(<span class="number">19</span>) = <span class="string">&quot;No such device&quot;</span>,
+        ENOTDIR(<span class="number">20</span>) = <span class="string">&quot;Not a directory&quot;</span>,
+        EISDIR(<span class="number">21</span>) = <span class="string">&quot;Is a directory&quot;</span>,
+        EINVAL(<span class="number">22</span>) = <span class="string">&quot;Invalid argument&quot;</span>,
+        ENFILE(<span class="number">23</span>) = <span class="string">&quot;File table overflow&quot;</span>,
+        EMFILE(<span class="number">24</span>) = <span class="string">&quot;Too many open files&quot;</span>,
+        ENOTTY(<span class="number">25</span>) = <span class="string">&quot;Not a typewriter&quot;</span>,
+        ETXTBSY(<span class="number">26</span>) = <span class="string">&quot;Text file busy&quot;</span>,
+        EFBIG(<span class="number">27</span>) = <span class="string">&quot;File too large&quot;</span>,
+        ENOSPC(<span class="number">28</span>) = <span class="string">&quot;No space left on device&quot;</span>,
+        ESPIPE(<span class="number">29</span>) = <span class="string">&quot;Illegal seek&quot;</span>,
+        EROFS(<span class="number">30</span>) = <span class="string">&quot;Read-only file system&quot;</span>,
+        EMLINK(<span class="number">31</span>) = <span class="string">&quot;Too many links&quot;</span>,
+        EPIPE(<span class="number">32</span>) = <span class="string">&quot;Broken pipe&quot;</span>,
+        EDOM(<span class="number">33</span>) = <span class="string">&quot;Math argument out of domain of func&quot;</span>,
+        ERANGE(<span class="number">34</span>) = <span class="string">&quot;Math result not representable&quot;</span>,
+        EDEADLK(<span class="number">35</span>) = <span class="string">&quot;Resource deadlock would occur&quot;</span>,
+        ENAMETOOLONG(<span class="number">36</span>) = <span class="string">&quot;File name too long&quot;</span>,
+        ENOLCK(<span class="number">37</span>) = <span class="string">&quot;No record locks available&quot;</span>,
+        ENOSYS(<span class="number">38</span>) = <span class="string">&quot;Invalid system call number&quot;</span>,
+        ENOTEMPTY(<span class="number">39</span>) = <span class="string">&quot;Directory not empty&quot;</span>,
+        ELOOP(<span class="number">40</span>) = <span class="string">&quot;Too many symbolic links encountered&quot;</span>,
+        ENOMSG(<span class="number">42</span>) = <span class="string">&quot;No message of desired type&quot;</span>,
+        EIDRM(<span class="number">43</span>) = <span class="string">&quot;Identifier removed&quot;</span>,
+        ECHRNG(<span class="number">44</span>) = <span class="string">&quot;Channel number out of range&quot;</span>,
+        EL2NSYNC(<span class="number">45</span>) = <span class="string">&quot;Level 2 not synchronized&quot;</span>,
+        EL3HLT(<span class="number">46</span>) = <span class="string">&quot;Level 3 halted&quot;</span>,
+        EL3RST(<span class="number">47</span>) = <span class="string">&quot;Level 3 reset&quot;</span>,
+        ELNRNG(<span class="number">48</span>) = <span class="string">&quot;Link number out of range&quot;</span>,
+        EUNATCH(<span class="number">49</span>) = <span class="string">&quot;Protocol driver not attached&quot;</span>,
+        ENOCSI(<span class="number">50</span>) = <span class="string">&quot;No CSI structure available&quot;</span>,
+        EL2HLT(<span class="number">51</span>) = <span class="string">&quot;Level 2 halted&quot;</span>,
+        EBADE(<span class="number">52</span>) = <span class="string">&quot;Invalid exchange&quot;</span>,
+        EBADR(<span class="number">53</span>) = <span class="string">&quot;Invalid request descriptor&quot;</span>,
+        EXFULL(<span class="number">54</span>) = <span class="string">&quot;Exchange full&quot;</span>,
+        ENOANO(<span class="number">55</span>) = <span class="string">&quot;No anode&quot;</span>,
+        EBADRQC(<span class="number">56</span>) = <span class="string">&quot;Invalid request code&quot;</span>,
+        EBADSLT(<span class="number">57</span>) = <span class="string">&quot;Invalid slot&quot;</span>,
+        EBFONT(<span class="number">59</span>) = <span class="string">&quot;Bad font file format&quot;</span>,
+        ENOSTR(<span class="number">60</span>) = <span class="string">&quot;Device not a stream&quot;</span>,
+        ENODATA(<span class="number">61</span>) = <span class="string">&quot;No data available&quot;</span>,
+        ETIME(<span class="number">62</span>) = <span class="string">&quot;Timer expired&quot;</span>,
+        ENOSR(<span class="number">63</span>) = <span class="string">&quot;Out of streams resources&quot;</span>,
+        ENONET(<span class="number">64</span>) = <span class="string">&quot;Machine is not on the network&quot;</span>,
+        ENOPKG(<span class="number">65</span>) = <span class="string">&quot;Package not installed&quot;</span>,
+        EREMOTE(<span class="number">66</span>) = <span class="string">&quot;Object is remote&quot;</span>,
+        ENOLINK(<span class="number">67</span>) = <span class="string">&quot;Link has been severed&quot;</span>,
+        EADV(<span class="number">68</span>) = <span class="string">&quot;Advertise error&quot;</span>,
+        ESRMNT(<span class="number">69</span>) = <span class="string">&quot;Srmount error&quot;</span>,
+        ECOMM(<span class="number">70</span>) = <span class="string">&quot;Communication error on send&quot;</span>,
+        EPROTO(<span class="number">71</span>) = <span class="string">&quot;Protocol error&quot;</span>,
+        EMULTIHOP(<span class="number">72</span>) = <span class="string">&quot;Multihop attempted&quot;</span>,
+        EDOTDOT(<span class="number">73</span>) = <span class="string">&quot;RFS specific error&quot;</span>,
+        EBADMSG(<span class="number">74</span>) = <span class="string">&quot;Not a data message&quot;</span>,
+        EOVERFLOW(<span class="number">75</span>) = <span class="string">&quot;Value too large for defined data type&quot;</span>,
+        ENOTUNIQ(<span class="number">76</span>) = <span class="string">&quot;Name not unique on network&quot;</span>,
+        EBADFD(<span class="number">77</span>) = <span class="string">&quot;File descriptor in bad state&quot;</span>,
+        EREMCHG(<span class="number">78</span>) = <span class="string">&quot;Remote address changed&quot;</span>,
+        ELIBACC(<span class="number">79</span>) = <span class="string">&quot;Can not access a needed shared library&quot;</span>,
+        ELIBBAD(<span class="number">80</span>) = <span class="string">&quot;Accessing a corrupted shared library&quot;</span>,
+        ELIBSCN(<span class="number">81</span>) = <span class="string">&quot;.lib section in a.out corrupted&quot;</span>,
+        ELIBMAX(<span class="number">82</span>) = <span class="string">&quot;Attempting to link in too many shared libraries&quot;</span>,
+        ELIBEXEC(<span class="number">83</span>) = <span class="string">&quot;Cannot exec a shared library directly&quot;</span>,
+        EILSEQ(<span class="number">84</span>) = <span class="string">&quot;Illegal byte sequence&quot;</span>,
+        ERESTART(<span class="number">85</span>) = <span class="string">&quot;Interrupted system call should be restarted&quot;</span>,
+        ESTRPIPE(<span class="number">86</span>) = <span class="string">&quot;Streams pipe error&quot;</span>,
+        EUSERS(<span class="number">87</span>) = <span class="string">&quot;Too many users&quot;</span>,
+        ENOTSOCK(<span class="number">88</span>) = <span class="string">&quot;Socket operation on non-socket&quot;</span>,
+        EDESTADDRREQ(<span class="number">89</span>) = <span class="string">&quot;Destination address required&quot;</span>,
+        EMSGSIZE(<span class="number">90</span>) = <span class="string">&quot;Message too long&quot;</span>,
+        EPROTOTYPE(<span class="number">91</span>) = <span class="string">&quot;Protocol wrong type for socket&quot;</span>,
+        ENOPROTOOPT(<span class="number">92</span>) = <span class="string">&quot;Protocol not available&quot;</span>,
+        EPROTONOSUPPORT(<span class="number">93</span>) = <span class="string">&quot;Protocol not supported&quot;</span>,
+        ESOCKTNOSUPPORT(<span class="number">94</span>) = <span class="string">&quot;Socket type not supported&quot;</span>,
+        EOPNOTSUPP(<span class="number">95</span>) = <span class="string">&quot;Operation not supported on transport endpoint&quot;</span>,
+        EPFNOSUPPORT(<span class="number">96</span>) = <span class="string">&quot;Protocol family not supported&quot;</span>,
+        EAFNOSUPPORT(<span class="number">97</span>) = <span class="string">&quot;Address family not supported by protocol&quot;</span>,
+        EADDRINUSE(<span class="number">98</span>) = <span class="string">&quot;Address already in use&quot;</span>,
+        EADDRNOTAVAIL(<span class="number">99</span>) = <span class="string">&quot;Cannot assign requested address&quot;</span>,
+        ENETDOWN(<span class="number">100</span>) = <span class="string">&quot;Network is down&quot;</span>,
+        ENETUNREACH(<span class="number">101</span>) = <span class="string">&quot;Network is unreachable&quot;</span>,
+        ENETRESET(<span class="number">102</span>) = <span class="string">&quot;Network dropped connection because of reset&quot;</span>,
+        ECONNABORTED(<span class="number">103</span>) = <span class="string">&quot;Software caused connection abort&quot;</span>,
+        ECONNRESET(<span class="number">104</span>) = <span class="string">&quot;Connection reset by peer&quot;</span>,
+        ENOBUFS(<span class="number">105</span>) = <span class="string">&quot;No buffer space available&quot;</span>,
+        EISCONN(<span class="number">106</span>) = <span class="string">&quot;Transport endpoint is already connected&quot;</span>,
+        ENOTCONN(<span class="number">107</span>) = <span class="string">&quot;Transport endpoint is not connected&quot;</span>,
+        ESHUTDOWN(<span class="number">108</span>) = <span class="string">&quot;Cannot send after transport endpoint shutdown&quot;</span>,
+        ETOOMANYREFS(<span class="number">109</span>) = <span class="string">&quot;Too many references: cannot splice&quot;</span>,
+        ETIMEDOUT(<span class="number">110</span>) = <span class="string">&quot;Connection timed out&quot;</span>,
+        ECONNREFUSED(<span class="number">111</span>) = <span class="string">&quot;Connection refused&quot;</span>,
+        EHOSTDOWN(<span class="number">112</span>) = <span class="string">&quot;Host is down&quot;</span>,
+        EHOSTUNREACH(<span class="number">113</span>) = <span class="string">&quot;No route to host&quot;</span>,
+        EALREADY(<span class="number">114</span>) = <span class="string">&quot;Operation already in progress&quot;</span>,
+        EINPROGRESS(<span class="number">115</span>) = <span class="string">&quot;Operation now in progress&quot;</span>,
+        ESTALE(<span class="number">116</span>) = <span class="string">&quot;Stale file handle&quot;</span>,
+        EUCLEAN(<span class="number">117</span>) = <span class="string">&quot;Structure needs cleaning&quot;</span>,
+        ENOTNAM(<span class="number">118</span>) = <span class="string">&quot;Not a XENIX named type file&quot;</span>,
+        ENAVAIL(<span class="number">119</span>) = <span class="string">&quot;No XENIX semaphores available&quot;</span>,
+        EISNAM(<span class="number">120</span>) = <span class="string">&quot;Is a named type file&quot;</span>,
+        EREMOTEIO(<span class="number">121</span>) = <span class="string">&quot;Remote I/O error&quot;</span>,
+        EDQUOT(<span class="number">122</span>) = <span class="string">&quot;Quota exceeded&quot;</span>,
+        ENOMEDIUM(<span class="number">123</span>) = <span class="string">&quot;No medium found&quot;</span>,
+        EMEDIUMTYPE(<span class="number">124</span>) = <span class="string">&quot;Wrong medium type&quot;</span>,
+        ECANCELED(<span class="number">125</span>) = <span class="string">&quot;Operation Canceled&quot;</span>,
+        ENOKEY(<span class="number">126</span>) = <span class="string">&quot;Required key not available&quot;</span>,
+        EKEYEXPIRED(<span class="number">127</span>) = <span class="string">&quot;Key has expired&quot;</span>,
+        EKEYREVOKED(<span class="number">128</span>) = <span class="string">&quot;Key has been revoked&quot;</span>,
+        EKEYREJECTED(<span class="number">129</span>) = <span class="string">&quot;Key was rejected by service&quot;</span>,
+        EOWNERDEAD(<span class="number">130</span>) = <span class="string">&quot;Owner died&quot;</span>,
+        ENOTRECOVERABLE(<span class="number">131</span>) = <span class="string">&quot;State not recoverable&quot;</span>,
+        ERFKILL(<span class="number">132</span>) = <span class="string">&quot;Operation not possible due to RF-kill&quot;</span>,
+        EHWPOISON(<span class="number">133</span>) = <span class="string">&quot;Memory page has hardware error&quot;</span>,
+        ERESTARTSYS(<span class="number">512</span>) = <span class="string">&quot;Restart syscall&quot;</span>,
+        ERESTARTNOINTR(<span class="number">513</span>) = <span class="string">&quot;Restart if no interrupt&quot;</span>,
+        ERESTARTNOHAND(<span class="number">514</span>) = <span class="string">&quot;restart if no handler..&quot;</span>,
+        ENOIOCTLCMD(<span class="number">515</span>) = <span class="string">&quot;No ioctl command&quot;</span>,
+        ERESTART_RESTARTBLOCK(<span class="number">516</span>) = <span class="string">&quot;restart by calling sys_restart_syscall&quot;</span>,
+        EPROBE_DEFER(<span class="number">517</span>) = <span class="string">&quot;Driver requests probe retry&quot;</span>,
+        EOPENSTALE(<span class="number">518</span>) = <span class="string">&quot;open found a stale dentry&quot;</span>,
+        ENOPARAM(<span class="number">519</span>) = <span class="string">&quot;Parameter not supported&quot;</span>,
+        EBADHANDLE(<span class="number">521</span>) = <span class="string">&quot;Illegal NFS file handle&quot;</span>,
+        ENOTSYNC(<span class="number">522</span>) = <span class="string">&quot;Update synchronization mismatch&quot;</span>,
+        EBADCOOKIE(<span class="number">523</span>) = <span class="string">&quot;Cookie is stale&quot;</span>,
+        ENOTSUPP(<span class="number">524</span>) = <span class="string">&quot;Operation is not supported&quot;</span>,
+        ETOOSMALL(<span class="number">525</span>) = <span class="string">&quot;Buffer or request is too small&quot;</span>,
+        ESERVERFAULT(<span class="number">526</span>) = <span class="string">&quot;An untranslatable error occurred&quot;</span>,
+        EBADTYPE(<span class="number">527</span>) = <span class="string">&quot;Type not supported by server&quot;</span>,
+        EJUKEBOX(<span class="number">528</span>) = <span class="string">&quot;Request initiated, but will not complete before timeout&quot;</span>,
+        EIOCBQUEUED(<span class="number">529</span>) = <span class="string">&quot;iocb queued, will get completion event&quot;</span>,
+        ERECALLCONFLICT(<span class="number">530</span>) = <span class="string">&quot;conflict with recalled state&quot;</span>,
+        ENOGRACE(<span class="number">531</span>) = <span class="string">&quot;NFS file lock reclaim refused&quot;</span>,
+    }
+}
+</code></pre></div>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="syscalls" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0" ></div></body></html>

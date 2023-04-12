@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":[["fs","This modules contains functions for kernel variables related to filesystems"],["kernel","Global kernel info / tuning miscellaneous stuff"],["vm","Memory management tuning buffer and cache management"]]};

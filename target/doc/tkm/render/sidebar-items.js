@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":[["define_layout",""],["render_console_layout",""],["render_cpu_cores_layout",""],["render_input_layout",""],["render_processes_layout",""],["render_sparklines_layout",""]]};

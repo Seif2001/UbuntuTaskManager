@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":[["BinFmtData",""]],"fn":[["enabled","Returns true if the miscellaneous Binary Formats system is enabled."],["list",""]],"struct":[["BinFmtEntry","A registered binary format entry"],["BinFmtFlags","Various key flags"]]};

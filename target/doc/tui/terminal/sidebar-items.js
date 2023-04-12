@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":[["Frame","Represents a consistent terminal interface for rendering."],["Terminal","Interface to the terminal backed by Termion"]]};

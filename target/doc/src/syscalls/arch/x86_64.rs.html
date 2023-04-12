@@ -1,0 +1,1468 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/seif/.cargo/registry/src/github.com-1ecc6299db9ec823/syscalls-0.6.9/src/arch/x86_64.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>x86_64.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../syscalls/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../syscalls/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../syscalls/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<span id="2">2</span>
+<span id="3">3</span>
+<span id="4">4</span>
+<span id="5">5</span>
+<span id="6">6</span>
+<span id="7">7</span>
+<span id="8">8</span>
+<span id="9">9</span>
+<span id="10">10</span>
+<span id="11">11</span>
+<span id="12">12</span>
+<span id="13">13</span>
+<span id="14">14</span>
+<span id="15">15</span>
+<span id="16">16</span>
+<span id="17">17</span>
+<span id="18">18</span>
+<span id="19">19</span>
+<span id="20">20</span>
+<span id="21">21</span>
+<span id="22">22</span>
+<span id="23">23</span>
+<span id="24">24</span>
+<span id="25">25</span>
+<span id="26">26</span>
+<span id="27">27</span>
+<span id="28">28</span>
+<span id="29">29</span>
+<span id="30">30</span>
+<span id="31">31</span>
+<span id="32">32</span>
+<span id="33">33</span>
+<span id="34">34</span>
+<span id="35">35</span>
+<span id="36">36</span>
+<span id="37">37</span>
+<span id="38">38</span>
+<span id="39">39</span>
+<span id="40">40</span>
+<span id="41">41</span>
+<span id="42">42</span>
+<span id="43">43</span>
+<span id="44">44</span>
+<span id="45">45</span>
+<span id="46">46</span>
+<span id="47">47</span>
+<span id="48">48</span>
+<span id="49">49</span>
+<span id="50">50</span>
+<span id="51">51</span>
+<span id="52">52</span>
+<span id="53">53</span>
+<span id="54">54</span>
+<span id="55">55</span>
+<span id="56">56</span>
+<span id="57">57</span>
+<span id="58">58</span>
+<span id="59">59</span>
+<span id="60">60</span>
+<span id="61">61</span>
+<span id="62">62</span>
+<span id="63">63</span>
+<span id="64">64</span>
+<span id="65">65</span>
+<span id="66">66</span>
+<span id="67">67</span>
+<span id="68">68</span>
+<span id="69">69</span>
+<span id="70">70</span>
+<span id="71">71</span>
+<span id="72">72</span>
+<span id="73">73</span>
+<span id="74">74</span>
+<span id="75">75</span>
+<span id="76">76</span>
+<span id="77">77</span>
+<span id="78">78</span>
+<span id="79">79</span>
+<span id="80">80</span>
+<span id="81">81</span>
+<span id="82">82</span>
+<span id="83">83</span>
+<span id="84">84</span>
+<span id="85">85</span>
+<span id="86">86</span>
+<span id="87">87</span>
+<span id="88">88</span>
+<span id="89">89</span>
+<span id="90">90</span>
+<span id="91">91</span>
+<span id="92">92</span>
+<span id="93">93</span>
+<span id="94">94</span>
+<span id="95">95</span>
+<span id="96">96</span>
+<span id="97">97</span>
+<span id="98">98</span>
+<span id="99">99</span>
+<span id="100">100</span>
+<span id="101">101</span>
+<span id="102">102</span>
+<span id="103">103</span>
+<span id="104">104</span>
+<span id="105">105</span>
+<span id="106">106</span>
+<span id="107">107</span>
+<span id="108">108</span>
+<span id="109">109</span>
+<span id="110">110</span>
+<span id="111">111</span>
+<span id="112">112</span>
+<span id="113">113</span>
+<span id="114">114</span>
+<span id="115">115</span>
+<span id="116">116</span>
+<span id="117">117</span>
+<span id="118">118</span>
+<span id="119">119</span>
+<span id="120">120</span>
+<span id="121">121</span>
+<span id="122">122</span>
+<span id="123">123</span>
+<span id="124">124</span>
+<span id="125">125</span>
+<span id="126">126</span>
+<span id="127">127</span>
+<span id="128">128</span>
+<span id="129">129</span>
+<span id="130">130</span>
+<span id="131">131</span>
+<span id="132">132</span>
+<span id="133">133</span>
+<span id="134">134</span>
+<span id="135">135</span>
+<span id="136">136</span>
+<span id="137">137</span>
+<span id="138">138</span>
+<span id="139">139</span>
+<span id="140">140</span>
+<span id="141">141</span>
+<span id="142">142</span>
+<span id="143">143</span>
+<span id="144">144</span>
+<span id="145">145</span>
+<span id="146">146</span>
+<span id="147">147</span>
+<span id="148">148</span>
+<span id="149">149</span>
+<span id="150">150</span>
+<span id="151">151</span>
+<span id="152">152</span>
+<span id="153">153</span>
+<span id="154">154</span>
+<span id="155">155</span>
+<span id="156">156</span>
+<span id="157">157</span>
+<span id="158">158</span>
+<span id="159">159</span>
+<span id="160">160</span>
+<span id="161">161</span>
+<span id="162">162</span>
+<span id="163">163</span>
+<span id="164">164</span>
+<span id="165">165</span>
+<span id="166">166</span>
+<span id="167">167</span>
+<span id="168">168</span>
+<span id="169">169</span>
+<span id="170">170</span>
+<span id="171">171</span>
+<span id="172">172</span>
+<span id="173">173</span>
+<span id="174">174</span>
+<span id="175">175</span>
+<span id="176">176</span>
+<span id="177">177</span>
+<span id="178">178</span>
+<span id="179">179</span>
+<span id="180">180</span>
+<span id="181">181</span>
+<span id="182">182</span>
+<span id="183">183</span>
+<span id="184">184</span>
+<span id="185">185</span>
+<span id="186">186</span>
+<span id="187">187</span>
+<span id="188">188</span>
+<span id="189">189</span>
+<span id="190">190</span>
+<span id="191">191</span>
+<span id="192">192</span>
+<span id="193">193</span>
+<span id="194">194</span>
+<span id="195">195</span>
+<span id="196">196</span>
+<span id="197">197</span>
+<span id="198">198</span>
+<span id="199">199</span>
+<span id="200">200</span>
+<span id="201">201</span>
+<span id="202">202</span>
+<span id="203">203</span>
+<span id="204">204</span>
+<span id="205">205</span>
+<span id="206">206</span>
+<span id="207">207</span>
+<span id="208">208</span>
+<span id="209">209</span>
+<span id="210">210</span>
+<span id="211">211</span>
+<span id="212">212</span>
+<span id="213">213</span>
+<span id="214">214</span>
+<span id="215">215</span>
+<span id="216">216</span>
+<span id="217">217</span>
+<span id="218">218</span>
+<span id="219">219</span>
+<span id="220">220</span>
+<span id="221">221</span>
+<span id="222">222</span>
+<span id="223">223</span>
+<span id="224">224</span>
+<span id="225">225</span>
+<span id="226">226</span>
+<span id="227">227</span>
+<span id="228">228</span>
+<span id="229">229</span>
+<span id="230">230</span>
+<span id="231">231</span>
+<span id="232">232</span>
+<span id="233">233</span>
+<span id="234">234</span>
+<span id="235">235</span>
+<span id="236">236</span>
+<span id="237">237</span>
+<span id="238">238</span>
+<span id="239">239</span>
+<span id="240">240</span>
+<span id="241">241</span>
+<span id="242">242</span>
+<span id="243">243</span>
+<span id="244">244</span>
+<span id="245">245</span>
+<span id="246">246</span>
+<span id="247">247</span>
+<span id="248">248</span>
+<span id="249">249</span>
+<span id="250">250</span>
+<span id="251">251</span>
+<span id="252">252</span>
+<span id="253">253</span>
+<span id="254">254</span>
+<span id="255">255</span>
+<span id="256">256</span>
+<span id="257">257</span>
+<span id="258">258</span>
+<span id="259">259</span>
+<span id="260">260</span>
+<span id="261">261</span>
+<span id="262">262</span>
+<span id="263">263</span>
+<span id="264">264</span>
+<span id="265">265</span>
+<span id="266">266</span>
+<span id="267">267</span>
+<span id="268">268</span>
+<span id="269">269</span>
+<span id="270">270</span>
+<span id="271">271</span>
+<span id="272">272</span>
+<span id="273">273</span>
+<span id="274">274</span>
+<span id="275">275</span>
+<span id="276">276</span>
+<span id="277">277</span>
+<span id="278">278</span>
+<span id="279">279</span>
+<span id="280">280</span>
+<span id="281">281</span>
+<span id="282">282</span>
+<span id="283">283</span>
+<span id="284">284</span>
+<span id="285">285</span>
+<span id="286">286</span>
+<span id="287">287</span>
+<span id="288">288</span>
+<span id="289">289</span>
+<span id="290">290</span>
+<span id="291">291</span>
+<span id="292">292</span>
+<span id="293">293</span>
+<span id="294">294</span>
+<span id="295">295</span>
+<span id="296">296</span>
+<span id="297">297</span>
+<span id="298">298</span>
+<span id="299">299</span>
+<span id="300">300</span>
+<span id="301">301</span>
+<span id="302">302</span>
+<span id="303">303</span>
+<span id="304">304</span>
+<span id="305">305</span>
+<span id="306">306</span>
+<span id="307">307</span>
+<span id="308">308</span>
+<span id="309">309</span>
+<span id="310">310</span>
+<span id="311">311</span>
+<span id="312">312</span>
+<span id="313">313</span>
+<span id="314">314</span>
+<span id="315">315</span>
+<span id="316">316</span>
+<span id="317">317</span>
+<span id="318">318</span>
+<span id="319">319</span>
+<span id="320">320</span>
+<span id="321">321</span>
+<span id="322">322</span>
+<span id="323">323</span>
+<span id="324">324</span>
+<span id="325">325</span>
+<span id="326">326</span>
+<span id="327">327</span>
+<span id="328">328</span>
+<span id="329">329</span>
+<span id="330">330</span>
+<span id="331">331</span>
+<span id="332">332</span>
+<span id="333">333</span>
+<span id="334">334</span>
+<span id="335">335</span>
+<span id="336">336</span>
+<span id="337">337</span>
+<span id="338">338</span>
+<span id="339">339</span>
+<span id="340">340</span>
+<span id="341">341</span>
+<span id="342">342</span>
+<span id="343">343</span>
+<span id="344">344</span>
+<span id="345">345</span>
+<span id="346">346</span>
+<span id="347">347</span>
+<span id="348">348</span>
+<span id="349">349</span>
+<span id="350">350</span>
+<span id="351">351</span>
+<span id="352">352</span>
+<span id="353">353</span>
+<span id="354">354</span>
+<span id="355">355</span>
+<span id="356">356</span>
+<span id="357">357</span>
+<span id="358">358</span>
+<span id="359">359</span>
+<span id="360">360</span>
+<span id="361">361</span>
+<span id="362">362</span>
+<span id="363">363</span>
+<span id="364">364</span>
+<span id="365">365</span>
+<span id="366">366</span>
+<span id="367">367</span>
+<span id="368">368</span>
+<span id="369">369</span>
+<span id="370">370</span>
+<span id="371">371</span>
+<span id="372">372</span>
+<span id="373">373</span>
+<span id="374">374</span>
+<span id="375">375</span>
+<span id="376">376</span>
+<span id="377">377</span>
+<span id="378">378</span>
+<span id="379">379</span>
+<span id="380">380</span>
+<span id="381">381</span>
+<span id="382">382</span>
+<span id="383">383</span>
+<span id="384">384</span>
+<span id="385">385</span>
+<span id="386">386</span>
+<span id="387">387</span>
+<span id="388">388</span>
+<span id="389">389</span>
+<span id="390">390</span>
+<span id="391">391</span>
+<span id="392">392</span>
+<span id="393">393</span>
+<span id="394">394</span>
+<span id="395">395</span>
+<span id="396">396</span>
+<span id="397">397</span>
+<span id="398">398</span>
+<span id="399">399</span>
+<span id="400">400</span>
+<span id="401">401</span>
+<span id="402">402</span>
+<span id="403">403</span>
+<span id="404">404</span>
+<span id="405">405</span>
+<span id="406">406</span>
+<span id="407">407</span>
+<span id="408">408</span>
+<span id="409">409</span>
+<span id="410">410</span>
+<span id="411">411</span>
+<span id="412">412</span>
+<span id="413">413</span>
+<span id="414">414</span>
+<span id="415">415</span>
+<span id="416">416</span>
+<span id="417">417</span>
+<span id="418">418</span>
+<span id="419">419</span>
+<span id="420">420</span>
+<span id="421">421</span>
+<span id="422">422</span>
+<span id="423">423</span>
+<span id="424">424</span>
+<span id="425">425</span>
+<span id="426">426</span>
+<span id="427">427</span>
+<span id="428">428</span>
+<span id="429">429</span>
+<span id="430">430</span>
+<span id="431">431</span>
+<span id="432">432</span>
+<span id="433">433</span>
+<span id="434">434</span>
+<span id="435">435</span>
+<span id="436">436</span>
+<span id="437">437</span>
+<span id="438">438</span>
+<span id="439">439</span>
+<span id="440">440</span>
+<span id="441">441</span>
+<span id="442">442</span>
+<span id="443">443</span>
+<span id="444">444</span>
+<span id="445">445</span>
+<span id="446">446</span>
+<span id="447">447</span>
+<span id="448">448</span>
+<span id="449">449</span>
+<span id="450">450</span>
+<span id="451">451</span>
+<span id="452">452</span>
+<span id="453">453</span>
+<span id="454">454</span>
+<span id="455">455</span>
+<span id="456">456</span>
+<span id="457">457</span>
+<span id="458">458</span>
+<span id="459">459</span>
+<span id="460">460</span>
+<span id="461">461</span>
+<span id="462">462</span>
+<span id="463">463</span>
+<span id="464">464</span>
+<span id="465">465</span>
+<span id="466">466</span>
+<span id="467">467</span>
+<span id="468">468</span>
+<span id="469">469</span>
+<span id="470">470</span>
+<span id="471">471</span>
+<span id="472">472</span>
+<span id="473">473</span>
+<span id="474">474</span>
+<span id="475">475</span>
+<span id="476">476</span>
+<span id="477">477</span>
+<span id="478">478</span>
+<span id="479">479</span>
+<span id="480">480</span>
+<span id="481">481</span>
+<span id="482">482</span>
+<span id="483">483</span>
+<span id="484">484</span>
+<span id="485">485</span>
+<span id="486">486</span>
+<span id="487">487</span>
+<span id="488">488</span>
+<span id="489">489</span>
+<span id="490">490</span>
+<span id="491">491</span>
+<span id="492">492</span>
+<span id="493">493</span>
+<span id="494">494</span>
+<span id="495">495</span>
+<span id="496">496</span>
+<span id="497">497</span>
+<span id="498">498</span>
+<span id="499">499</span>
+<span id="500">500</span>
+<span id="501">501</span>
+<span id="502">502</span>
+<span id="503">503</span>
+<span id="504">504</span>
+<span id="505">505</span>
+<span id="506">506</span>
+<span id="507">507</span>
+<span id="508">508</span>
+<span id="509">509</span>
+<span id="510">510</span>
+<span id="511">511</span>
+<span id="512">512</span>
+<span id="513">513</span>
+<span id="514">514</span>
+<span id="515">515</span>
+<span id="516">516</span>
+<span id="517">517</span>
+<span id="518">518</span>
+<span id="519">519</span>
+<span id="520">520</span>
+<span id="521">521</span>
+<span id="522">522</span>
+<span id="523">523</span>
+<span id="524">524</span>
+<span id="525">525</span>
+<span id="526">526</span>
+<span id="527">527</span>
+<span id="528">528</span>
+<span id="529">529</span>
+<span id="530">530</span>
+<span id="531">531</span>
+<span id="532">532</span>
+<span id="533">533</span>
+<span id="534">534</span>
+<span id="535">535</span>
+<span id="536">536</span>
+<span id="537">537</span>
+<span id="538">538</span>
+<span id="539">539</span>
+<span id="540">540</span>
+<span id="541">541</span>
+<span id="542">542</span>
+<span id="543">543</span>
+<span id="544">544</span>
+<span id="545">545</span>
+<span id="546">546</span>
+<span id="547">547</span>
+<span id="548">548</span>
+<span id="549">549</span>
+<span id="550">550</span>
+<span id="551">551</span>
+<span id="552">552</span>
+<span id="553">553</span>
+<span id="554">554</span>
+<span id="555">555</span>
+<span id="556">556</span>
+<span id="557">557</span>
+<span id="558">558</span>
+<span id="559">559</span>
+<span id="560">560</span>
+<span id="561">561</span>
+<span id="562">562</span>
+<span id="563">563</span>
+<span id="564">564</span>
+<span id="565">565</span>
+<span id="566">566</span>
+<span id="567">567</span>
+<span id="568">568</span>
+<span id="569">569</span>
+<span id="570">570</span>
+<span id="571">571</span>
+<span id="572">572</span>
+<span id="573">573</span>
+<span id="574">574</span>
+<span id="575">575</span>
+<span id="576">576</span>
+<span id="577">577</span>
+<span id="578">578</span>
+<span id="579">579</span>
+<span id="580">580</span>
+<span id="581">581</span>
+<span id="582">582</span>
+<span id="583">583</span>
+<span id="584">584</span>
+<span id="585">585</span>
+<span id="586">586</span>
+<span id="587">587</span>
+<span id="588">588</span>
+<span id="589">589</span>
+<span id="590">590</span>
+<span id="591">591</span>
+<span id="592">592</span>
+<span id="593">593</span>
+<span id="594">594</span>
+<span id="595">595</span>
+<span id="596">596</span>
+<span id="597">597</span>
+<span id="598">598</span>
+<span id="599">599</span>
+<span id="600">600</span>
+<span id="601">601</span>
+<span id="602">602</span>
+<span id="603">603</span>
+<span id="604">604</span>
+<span id="605">605</span>
+<span id="606">606</span>
+<span id="607">607</span>
+<span id="608">608</span>
+<span id="609">609</span>
+<span id="610">610</span>
+<span id="611">611</span>
+<span id="612">612</span>
+<span id="613">613</span>
+<span id="614">614</span>
+<span id="615">615</span>
+<span id="616">616</span>
+<span id="617">617</span>
+<span id="618">618</span>
+<span id="619">619</span>
+<span id="620">620</span>
+<span id="621">621</span>
+<span id="622">622</span>
+<span id="623">623</span>
+<span id="624">624</span>
+<span id="625">625</span>
+<span id="626">626</span>
+<span id="627">627</span>
+<span id="628">628</span>
+<span id="629">629</span>
+<span id="630">630</span>
+<span id="631">631</span>
+<span id="632">632</span>
+<span id="633">633</span>
+<span id="634">634</span>
+<span id="635">635</span>
+<span id="636">636</span>
+<span id="637">637</span>
+<span id="638">638</span>
+<span id="639">639</span>
+<span id="640">640</span>
+<span id="641">641</span>
+<span id="642">642</span>
+<span id="643">643</span>
+<span id="644">644</span>
+<span id="645">645</span>
+<span id="646">646</span>
+<span id="647">647</span>
+<span id="648">648</span>
+<span id="649">649</span>
+<span id="650">650</span>
+<span id="651">651</span>
+<span id="652">652</span>
+<span id="653">653</span>
+<span id="654">654</span>
+<span id="655">655</span>
+<span id="656">656</span>
+<span id="657">657</span>
+<span id="658">658</span>
+<span id="659">659</span>
+<span id="660">660</span>
+<span id="661">661</span>
+<span id="662">662</span>
+<span id="663">663</span>
+<span id="664">664</span>
+<span id="665">665</span>
+<span id="666">666</span>
+<span id="667">667</span>
+<span id="668">668</span>
+<span id="669">669</span>
+<span id="670">670</span>
+<span id="671">671</span>
+<span id="672">672</span>
+<span id="673">673</span>
+<span id="674">674</span>
+<span id="675">675</span>
+<span id="676">676</span>
+<span id="677">677</span>
+<span id="678">678</span>
+<span id="679">679</span>
+<span id="680">680</span>
+<span id="681">681</span>
+<span id="682">682</span>
+<span id="683">683</span>
+<span id="684">684</span>
+<span id="685">685</span>
+<span id="686">686</span>
+<span id="687">687</span>
+<span id="688">688</span>
+<span id="689">689</span>
+<span id="690">690</span>
+<span id="691">691</span>
+<span id="692">692</span>
+<span id="693">693</span>
+<span id="694">694</span>
+<span id="695">695</span>
+<span id="696">696</span>
+<span id="697">697</span>
+<span id="698">698</span>
+<span id="699">699</span>
+<span id="700">700</span>
+<span id="701">701</span>
+<span id="702">702</span>
+<span id="703">703</span>
+<span id="704">704</span>
+<span id="705">705</span>
+<span id="706">706</span>
+<span id="707">707</span>
+<span id="708">708</span>
+<span id="709">709</span>
+<span id="710">710</span>
+<span id="711">711</span>
+<span id="712">712</span>
+<span id="713">713</span>
+<span id="714">714</span>
+<span id="715">715</span>
+<span id="716">716</span>
+<span id="717">717</span>
+<span id="718">718</span>
+<span id="719">719</span>
+<span id="720">720</span>
+<span id="721">721</span>
+<span id="722">722</span>
+<span id="723">723</span>
+<span id="724">724</span>
+<span id="725">725</span>
+<span id="726">726</span>
+<span id="727">727</span>
+<span id="728">728</span>
+<span id="729">729</span>
+<span id="730">730</span>
+<span id="731">731</span>
+<span id="732">732</span>
+<span id="733">733</span>
+</pre><pre class="rust"><code><span class="doccomment">//! Syscalls for the `x86_64` architecture.
+
+</span><span class="comment">// This file is automatically generated. Do not edit!
+
+</span><span class="macro">syscall_enum! </span>{
+    <span class="kw">pub enum </span>Sysno {
+        <span class="doccomment">/// See [read(2)](https://man7.org/linux/man-pages/man2/read.2.html) for more info on this syscall.
+        </span>read = <span class="number">0</span>,
+        <span class="doccomment">/// See [write(2)](https://man7.org/linux/man-pages/man2/write.2.html) for more info on this syscall.
+        </span>write = <span class="number">1</span>,
+        <span class="doccomment">/// See [open(2)](https://man7.org/linux/man-pages/man2/open.2.html) for more info on this syscall.
+        </span>open = <span class="number">2</span>,
+        <span class="doccomment">/// See [close(2)](https://man7.org/linux/man-pages/man2/close.2.html) for more info on this syscall.
+        </span>close = <span class="number">3</span>,
+        <span class="doccomment">/// See [stat(2)](https://man7.org/linux/man-pages/man2/stat.2.html) for more info on this syscall.
+        </span>stat = <span class="number">4</span>,
+        <span class="doccomment">/// See [fstat(2)](https://man7.org/linux/man-pages/man2/fstat.2.html) for more info on this syscall.
+        </span>fstat = <span class="number">5</span>,
+        <span class="doccomment">/// See [lstat(2)](https://man7.org/linux/man-pages/man2/lstat.2.html) for more info on this syscall.
+        </span>lstat = <span class="number">6</span>,
+        <span class="doccomment">/// See [poll(2)](https://man7.org/linux/man-pages/man2/poll.2.html) for more info on this syscall.
+        </span>poll = <span class="number">7</span>,
+        <span class="doccomment">/// See [lseek(2)](https://man7.org/linux/man-pages/man2/lseek.2.html) for more info on this syscall.
+        </span>lseek = <span class="number">8</span>,
+        <span class="doccomment">/// See [mmap(2)](https://man7.org/linux/man-pages/man2/mmap.2.html) for more info on this syscall.
+        </span>mmap = <span class="number">9</span>,
+        <span class="doccomment">/// See [mprotect(2)](https://man7.org/linux/man-pages/man2/mprotect.2.html) for more info on this syscall.
+        </span>mprotect = <span class="number">10</span>,
+        <span class="doccomment">/// See [munmap(2)](https://man7.org/linux/man-pages/man2/munmap.2.html) for more info on this syscall.
+        </span>munmap = <span class="number">11</span>,
+        <span class="doccomment">/// See [brk(2)](https://man7.org/linux/man-pages/man2/brk.2.html) for more info on this syscall.
+        </span>brk = <span class="number">12</span>,
+        <span class="doccomment">/// See [rt_sigaction(2)](https://man7.org/linux/man-pages/man2/rt_sigaction.2.html) for more info on this syscall.
+        </span>rt_sigaction = <span class="number">13</span>,
+        <span class="doccomment">/// See [rt_sigprocmask(2)](https://man7.org/linux/man-pages/man2/rt_sigprocmask.2.html) for more info on this syscall.
+        </span>rt_sigprocmask = <span class="number">14</span>,
+        <span class="doccomment">/// See [rt_sigreturn(2)](https://man7.org/linux/man-pages/man2/rt_sigreturn.2.html) for more info on this syscall.
+        </span>rt_sigreturn = <span class="number">15</span>,
+        <span class="doccomment">/// See [ioctl(2)](https://man7.org/linux/man-pages/man2/ioctl.2.html) for more info on this syscall.
+        </span>ioctl = <span class="number">16</span>,
+        <span class="doccomment">/// See [pread64(2)](https://man7.org/linux/man-pages/man2/pread64.2.html) for more info on this syscall.
+        </span>pread64 = <span class="number">17</span>,
+        <span class="doccomment">/// See [pwrite64(2)](https://man7.org/linux/man-pages/man2/pwrite64.2.html) for more info on this syscall.
+        </span>pwrite64 = <span class="number">18</span>,
+        <span class="doccomment">/// See [readv(2)](https://man7.org/linux/man-pages/man2/readv.2.html) for more info on this syscall.
+        </span>readv = <span class="number">19</span>,
+        <span class="doccomment">/// See [writev(2)](https://man7.org/linux/man-pages/man2/writev.2.html) for more info on this syscall.
+        </span>writev = <span class="number">20</span>,
+        <span class="doccomment">/// See [access(2)](https://man7.org/linux/man-pages/man2/access.2.html) for more info on this syscall.
+        </span>access = <span class="number">21</span>,
+        <span class="doccomment">/// See [pipe(2)](https://man7.org/linux/man-pages/man2/pipe.2.html) for more info on this syscall.
+        </span>pipe = <span class="number">22</span>,
+        <span class="doccomment">/// See [select(2)](https://man7.org/linux/man-pages/man2/select.2.html) for more info on this syscall.
+        </span>select = <span class="number">23</span>,
+        <span class="doccomment">/// See [sched_yield(2)](https://man7.org/linux/man-pages/man2/sched_yield.2.html) for more info on this syscall.
+        </span>sched_yield = <span class="number">24</span>,
+        <span class="doccomment">/// See [mremap(2)](https://man7.org/linux/man-pages/man2/mremap.2.html) for more info on this syscall.
+        </span>mremap = <span class="number">25</span>,
+        <span class="doccomment">/// See [msync(2)](https://man7.org/linux/man-pages/man2/msync.2.html) for more info on this syscall.
+        </span>msync = <span class="number">26</span>,
+        <span class="doccomment">/// See [mincore(2)](https://man7.org/linux/man-pages/man2/mincore.2.html) for more info on this syscall.
+        </span>mincore = <span class="number">27</span>,
+        <span class="doccomment">/// See [madvise(2)](https://man7.org/linux/man-pages/man2/madvise.2.html) for more info on this syscall.
+        </span>madvise = <span class="number">28</span>,
+        <span class="doccomment">/// See [shmget(2)](https://man7.org/linux/man-pages/man2/shmget.2.html) for more info on this syscall.
+        </span>shmget = <span class="number">29</span>,
+        <span class="doccomment">/// See [shmat(2)](https://man7.org/linux/man-pages/man2/shmat.2.html) for more info on this syscall.
+        </span>shmat = <span class="number">30</span>,
+        <span class="doccomment">/// See [shmctl(2)](https://man7.org/linux/man-pages/man2/shmctl.2.html) for more info on this syscall.
+        </span>shmctl = <span class="number">31</span>,
+        <span class="doccomment">/// See [dup(2)](https://man7.org/linux/man-pages/man2/dup.2.html) for more info on this syscall.
+        </span>dup = <span class="number">32</span>,
+        <span class="doccomment">/// See [dup2(2)](https://man7.org/linux/man-pages/man2/dup2.2.html) for more info on this syscall.
+        </span>dup2 = <span class="number">33</span>,
+        <span class="doccomment">/// See [pause(2)](https://man7.org/linux/man-pages/man2/pause.2.html) for more info on this syscall.
+        </span>pause = <span class="number">34</span>,
+        <span class="doccomment">/// See [nanosleep(2)](https://man7.org/linux/man-pages/man2/nanosleep.2.html) for more info on this syscall.
+        </span>nanosleep = <span class="number">35</span>,
+        <span class="doccomment">/// See [getitimer(2)](https://man7.org/linux/man-pages/man2/getitimer.2.html) for more info on this syscall.
+        </span>getitimer = <span class="number">36</span>,
+        <span class="doccomment">/// See [alarm(2)](https://man7.org/linux/man-pages/man2/alarm.2.html) for more info on this syscall.
+        </span>alarm = <span class="number">37</span>,
+        <span class="doccomment">/// See [setitimer(2)](https://man7.org/linux/man-pages/man2/setitimer.2.html) for more info on this syscall.
+        </span>setitimer = <span class="number">38</span>,
+        <span class="doccomment">/// See [getpid(2)](https://man7.org/linux/man-pages/man2/getpid.2.html) for more info on this syscall.
+        </span>getpid = <span class="number">39</span>,
+        <span class="doccomment">/// See [sendfile(2)](https://man7.org/linux/man-pages/man2/sendfile.2.html) for more info on this syscall.
+        </span>sendfile = <span class="number">40</span>,
+        <span class="doccomment">/// See [socket(2)](https://man7.org/linux/man-pages/man2/socket.2.html) for more info on this syscall.
+        </span>socket = <span class="number">41</span>,
+        <span class="doccomment">/// See [connect(2)](https://man7.org/linux/man-pages/man2/connect.2.html) for more info on this syscall.
+        </span>connect = <span class="number">42</span>,
+        <span class="doccomment">/// See [accept(2)](https://man7.org/linux/man-pages/man2/accept.2.html) for more info on this syscall.
+        </span>accept = <span class="number">43</span>,
+        <span class="doccomment">/// See [sendto(2)](https://man7.org/linux/man-pages/man2/sendto.2.html) for more info on this syscall.
+        </span>sendto = <span class="number">44</span>,
+        <span class="doccomment">/// See [recvfrom(2)](https://man7.org/linux/man-pages/man2/recvfrom.2.html) for more info on this syscall.
+        </span>recvfrom = <span class="number">45</span>,
+        <span class="doccomment">/// See [sendmsg(2)](https://man7.org/linux/man-pages/man2/sendmsg.2.html) for more info on this syscall.
+        </span>sendmsg = <span class="number">46</span>,
+        <span class="doccomment">/// See [recvmsg(2)](https://man7.org/linux/man-pages/man2/recvmsg.2.html) for more info on this syscall.
+        </span>recvmsg = <span class="number">47</span>,
+        <span class="doccomment">/// See [shutdown(2)](https://man7.org/linux/man-pages/man2/shutdown.2.html) for more info on this syscall.
+        </span>shutdown = <span class="number">48</span>,
+        <span class="doccomment">/// See [bind(2)](https://man7.org/linux/man-pages/man2/bind.2.html) for more info on this syscall.
+        </span>bind = <span class="number">49</span>,
+        <span class="doccomment">/// See [listen(2)](https://man7.org/linux/man-pages/man2/listen.2.html) for more info on this syscall.
+        </span>listen = <span class="number">50</span>,
+        <span class="doccomment">/// See [getsockname(2)](https://man7.org/linux/man-pages/man2/getsockname.2.html) for more info on this syscall.
+        </span>getsockname = <span class="number">51</span>,
+        <span class="doccomment">/// See [getpeername(2)](https://man7.org/linux/man-pages/man2/getpeername.2.html) for more info on this syscall.
+        </span>getpeername = <span class="number">52</span>,
+        <span class="doccomment">/// See [socketpair(2)](https://man7.org/linux/man-pages/man2/socketpair.2.html) for more info on this syscall.
+        </span>socketpair = <span class="number">53</span>,
+        <span class="doccomment">/// See [setsockopt(2)](https://man7.org/linux/man-pages/man2/setsockopt.2.html) for more info on this syscall.
+        </span>setsockopt = <span class="number">54</span>,
+        <span class="doccomment">/// See [getsockopt(2)](https://man7.org/linux/man-pages/man2/getsockopt.2.html) for more info on this syscall.
+        </span>getsockopt = <span class="number">55</span>,
+        <span class="doccomment">/// See [clone(2)](https://man7.org/linux/man-pages/man2/clone.2.html) for more info on this syscall.
+        </span>clone = <span class="number">56</span>,
+        <span class="doccomment">/// See [fork(2)](https://man7.org/linux/man-pages/man2/fork.2.html) for more info on this syscall.
+        </span>fork = <span class="number">57</span>,
+        <span class="doccomment">/// See [vfork(2)](https://man7.org/linux/man-pages/man2/vfork.2.html) for more info on this syscall.
+        </span>vfork = <span class="number">58</span>,
+        <span class="doccomment">/// See [execve(2)](https://man7.org/linux/man-pages/man2/execve.2.html) for more info on this syscall.
+        </span>execve = <span class="number">59</span>,
+        <span class="doccomment">/// See [exit(2)](https://man7.org/linux/man-pages/man2/exit.2.html) for more info on this syscall.
+        </span>exit = <span class="number">60</span>,
+        <span class="doccomment">/// See [wait4(2)](https://man7.org/linux/man-pages/man2/wait4.2.html) for more info on this syscall.
+        </span>wait4 = <span class="number">61</span>,
+        <span class="doccomment">/// See [kill(2)](https://man7.org/linux/man-pages/man2/kill.2.html) for more info on this syscall.
+        </span>kill = <span class="number">62</span>,
+        <span class="doccomment">/// See [uname(2)](https://man7.org/linux/man-pages/man2/uname.2.html) for more info on this syscall.
+        </span>uname = <span class="number">63</span>,
+        <span class="doccomment">/// See [semget(2)](https://man7.org/linux/man-pages/man2/semget.2.html) for more info on this syscall.
+        </span>semget = <span class="number">64</span>,
+        <span class="doccomment">/// See [semop(2)](https://man7.org/linux/man-pages/man2/semop.2.html) for more info on this syscall.
+        </span>semop = <span class="number">65</span>,
+        <span class="doccomment">/// See [semctl(2)](https://man7.org/linux/man-pages/man2/semctl.2.html) for more info on this syscall.
+        </span>semctl = <span class="number">66</span>,
+        <span class="doccomment">/// See [shmdt(2)](https://man7.org/linux/man-pages/man2/shmdt.2.html) for more info on this syscall.
+        </span>shmdt = <span class="number">67</span>,
+        <span class="doccomment">/// See [msgget(2)](https://man7.org/linux/man-pages/man2/msgget.2.html) for more info on this syscall.
+        </span>msgget = <span class="number">68</span>,
+        <span class="doccomment">/// See [msgsnd(2)](https://man7.org/linux/man-pages/man2/msgsnd.2.html) for more info on this syscall.
+        </span>msgsnd = <span class="number">69</span>,
+        <span class="doccomment">/// See [msgrcv(2)](https://man7.org/linux/man-pages/man2/msgrcv.2.html) for more info on this syscall.
+        </span>msgrcv = <span class="number">70</span>,
+        <span class="doccomment">/// See [msgctl(2)](https://man7.org/linux/man-pages/man2/msgctl.2.html) for more info on this syscall.
+        </span>msgctl = <span class="number">71</span>,
+        <span class="doccomment">/// See [fcntl(2)](https://man7.org/linux/man-pages/man2/fcntl.2.html) for more info on this syscall.
+        </span>fcntl = <span class="number">72</span>,
+        <span class="doccomment">/// See [flock(2)](https://man7.org/linux/man-pages/man2/flock.2.html) for more info on this syscall.
+        </span>flock = <span class="number">73</span>,
+        <span class="doccomment">/// See [fsync(2)](https://man7.org/linux/man-pages/man2/fsync.2.html) for more info on this syscall.
+        </span>fsync = <span class="number">74</span>,
+        <span class="doccomment">/// See [fdatasync(2)](https://man7.org/linux/man-pages/man2/fdatasync.2.html) for more info on this syscall.
+        </span>fdatasync = <span class="number">75</span>,
+        <span class="doccomment">/// See [truncate(2)](https://man7.org/linux/man-pages/man2/truncate.2.html) for more info on this syscall.
+        </span>truncate = <span class="number">76</span>,
+        <span class="doccomment">/// See [ftruncate(2)](https://man7.org/linux/man-pages/man2/ftruncate.2.html) for more info on this syscall.
+        </span>ftruncate = <span class="number">77</span>,
+        <span class="doccomment">/// See [getdents(2)](https://man7.org/linux/man-pages/man2/getdents.2.html) for more info on this syscall.
+        </span>getdents = <span class="number">78</span>,
+        <span class="doccomment">/// See [getcwd(2)](https://man7.org/linux/man-pages/man2/getcwd.2.html) for more info on this syscall.
+        </span>getcwd = <span class="number">79</span>,
+        <span class="doccomment">/// See [chdir(2)](https://man7.org/linux/man-pages/man2/chdir.2.html) for more info on this syscall.
+        </span>chdir = <span class="number">80</span>,
+        <span class="doccomment">/// See [fchdir(2)](https://man7.org/linux/man-pages/man2/fchdir.2.html) for more info on this syscall.
+        </span>fchdir = <span class="number">81</span>,
+        <span class="doccomment">/// See [rename(2)](https://man7.org/linux/man-pages/man2/rename.2.html) for more info on this syscall.
+        </span>rename = <span class="number">82</span>,
+        <span class="doccomment">/// See [mkdir(2)](https://man7.org/linux/man-pages/man2/mkdir.2.html) for more info on this syscall.
+        </span>mkdir = <span class="number">83</span>,
+        <span class="doccomment">/// See [rmdir(2)](https://man7.org/linux/man-pages/man2/rmdir.2.html) for more info on this syscall.
+        </span>rmdir = <span class="number">84</span>,
+        <span class="doccomment">/// See [creat(2)](https://man7.org/linux/man-pages/man2/creat.2.html) for more info on this syscall.
+        </span>creat = <span class="number">85</span>,
+        <span class="doccomment">/// See [link(2)](https://man7.org/linux/man-pages/man2/link.2.html) for more info on this syscall.
+        </span>link = <span class="number">86</span>,
+        <span class="doccomment">/// See [unlink(2)](https://man7.org/linux/man-pages/man2/unlink.2.html) for more info on this syscall.
+        </span>unlink = <span class="number">87</span>,
+        <span class="doccomment">/// See [symlink(2)](https://man7.org/linux/man-pages/man2/symlink.2.html) for more info on this syscall.
+        </span>symlink = <span class="number">88</span>,
+        <span class="doccomment">/// See [readlink(2)](https://man7.org/linux/man-pages/man2/readlink.2.html) for more info on this syscall.
+        </span>readlink = <span class="number">89</span>,
+        <span class="doccomment">/// See [chmod(2)](https://man7.org/linux/man-pages/man2/chmod.2.html) for more info on this syscall.
+        </span>chmod = <span class="number">90</span>,
+        <span class="doccomment">/// See [fchmod(2)](https://man7.org/linux/man-pages/man2/fchmod.2.html) for more info on this syscall.
+        </span>fchmod = <span class="number">91</span>,
+        <span class="doccomment">/// See [chown(2)](https://man7.org/linux/man-pages/man2/chown.2.html) for more info on this syscall.
+        </span>chown = <span class="number">92</span>,
+        <span class="doccomment">/// See [fchown(2)](https://man7.org/linux/man-pages/man2/fchown.2.html) for more info on this syscall.
+        </span>fchown = <span class="number">93</span>,
+        <span class="doccomment">/// See [lchown(2)](https://man7.org/linux/man-pages/man2/lchown.2.html) for more info on this syscall.
+        </span>lchown = <span class="number">94</span>,
+        <span class="doccomment">/// See [umask(2)](https://man7.org/linux/man-pages/man2/umask.2.html) for more info on this syscall.
+        </span>umask = <span class="number">95</span>,
+        <span class="doccomment">/// See [gettimeofday(2)](https://man7.org/linux/man-pages/man2/gettimeofday.2.html) for more info on this syscall.
+        </span>gettimeofday = <span class="number">96</span>,
+        <span class="doccomment">/// See [getrlimit(2)](https://man7.org/linux/man-pages/man2/getrlimit.2.html) for more info on this syscall.
+        </span>getrlimit = <span class="number">97</span>,
+        <span class="doccomment">/// See [getrusage(2)](https://man7.org/linux/man-pages/man2/getrusage.2.html) for more info on this syscall.
+        </span>getrusage = <span class="number">98</span>,
+        <span class="doccomment">/// See [sysinfo(2)](https://man7.org/linux/man-pages/man2/sysinfo.2.html) for more info on this syscall.
+        </span>sysinfo = <span class="number">99</span>,
+        <span class="doccomment">/// See [times(2)](https://man7.org/linux/man-pages/man2/times.2.html) for more info on this syscall.
+        </span>times = <span class="number">100</span>,
+        <span class="doccomment">/// See [ptrace(2)](https://man7.org/linux/man-pages/man2/ptrace.2.html) for more info on this syscall.
+        </span>ptrace = <span class="number">101</span>,
+        <span class="doccomment">/// See [getuid(2)](https://man7.org/linux/man-pages/man2/getuid.2.html) for more info on this syscall.
+        </span>getuid = <span class="number">102</span>,
+        <span class="doccomment">/// See [syslog(2)](https://man7.org/linux/man-pages/man2/syslog.2.html) for more info on this syscall.
+        </span>syslog = <span class="number">103</span>,
+        <span class="doccomment">/// See [getgid(2)](https://man7.org/linux/man-pages/man2/getgid.2.html) for more info on this syscall.
+        </span>getgid = <span class="number">104</span>,
+        <span class="doccomment">/// See [setuid(2)](https://man7.org/linux/man-pages/man2/setuid.2.html) for more info on this syscall.
+        </span>setuid = <span class="number">105</span>,
+        <span class="doccomment">/// See [setgid(2)](https://man7.org/linux/man-pages/man2/setgid.2.html) for more info on this syscall.
+        </span>setgid = <span class="number">106</span>,
+        <span class="doccomment">/// See [geteuid(2)](https://man7.org/linux/man-pages/man2/geteuid.2.html) for more info on this syscall.
+        </span>geteuid = <span class="number">107</span>,
+        <span class="doccomment">/// See [getegid(2)](https://man7.org/linux/man-pages/man2/getegid.2.html) for more info on this syscall.
+        </span>getegid = <span class="number">108</span>,
+        <span class="doccomment">/// See [setpgid(2)](https://man7.org/linux/man-pages/man2/setpgid.2.html) for more info on this syscall.
+        </span>setpgid = <span class="number">109</span>,
+        <span class="doccomment">/// See [getppid(2)](https://man7.org/linux/man-pages/man2/getppid.2.html) for more info on this syscall.
+        </span>getppid = <span class="number">110</span>,
+        <span class="doccomment">/// See [getpgrp(2)](https://man7.org/linux/man-pages/man2/getpgrp.2.html) for more info on this syscall.
+        </span>getpgrp = <span class="number">111</span>,
+        <span class="doccomment">/// See [setsid(2)](https://man7.org/linux/man-pages/man2/setsid.2.html) for more info on this syscall.
+        </span>setsid = <span class="number">112</span>,
+        <span class="doccomment">/// See [setreuid(2)](https://man7.org/linux/man-pages/man2/setreuid.2.html) for more info on this syscall.
+        </span>setreuid = <span class="number">113</span>,
+        <span class="doccomment">/// See [setregid(2)](https://man7.org/linux/man-pages/man2/setregid.2.html) for more info on this syscall.
+        </span>setregid = <span class="number">114</span>,
+        <span class="doccomment">/// See [getgroups(2)](https://man7.org/linux/man-pages/man2/getgroups.2.html) for more info on this syscall.
+        </span>getgroups = <span class="number">115</span>,
+        <span class="doccomment">/// See [setgroups(2)](https://man7.org/linux/man-pages/man2/setgroups.2.html) for more info on this syscall.
+        </span>setgroups = <span class="number">116</span>,
+        <span class="doccomment">/// See [setresuid(2)](https://man7.org/linux/man-pages/man2/setresuid.2.html) for more info on this syscall.
+        </span>setresuid = <span class="number">117</span>,
+        <span class="doccomment">/// See [getresuid(2)](https://man7.org/linux/man-pages/man2/getresuid.2.html) for more info on this syscall.
+        </span>getresuid = <span class="number">118</span>,
+        <span class="doccomment">/// See [setresgid(2)](https://man7.org/linux/man-pages/man2/setresgid.2.html) for more info on this syscall.
+        </span>setresgid = <span class="number">119</span>,
+        <span class="doccomment">/// See [getresgid(2)](https://man7.org/linux/man-pages/man2/getresgid.2.html) for more info on this syscall.
+        </span>getresgid = <span class="number">120</span>,
+        <span class="doccomment">/// See [getpgid(2)](https://man7.org/linux/man-pages/man2/getpgid.2.html) for more info on this syscall.
+        </span>getpgid = <span class="number">121</span>,
+        <span class="doccomment">/// See [setfsuid(2)](https://man7.org/linux/man-pages/man2/setfsuid.2.html) for more info on this syscall.
+        </span>setfsuid = <span class="number">122</span>,
+        <span class="doccomment">/// See [setfsgid(2)](https://man7.org/linux/man-pages/man2/setfsgid.2.html) for more info on this syscall.
+        </span>setfsgid = <span class="number">123</span>,
+        <span class="doccomment">/// See [getsid(2)](https://man7.org/linux/man-pages/man2/getsid.2.html) for more info on this syscall.
+        </span>getsid = <span class="number">124</span>,
+        <span class="doccomment">/// See [capget(2)](https://man7.org/linux/man-pages/man2/capget.2.html) for more info on this syscall.
+        </span>capget = <span class="number">125</span>,
+        <span class="doccomment">/// See [capset(2)](https://man7.org/linux/man-pages/man2/capset.2.html) for more info on this syscall.
+        </span>capset = <span class="number">126</span>,
+        <span class="doccomment">/// See [rt_sigpending(2)](https://man7.org/linux/man-pages/man2/rt_sigpending.2.html) for more info on this syscall.
+        </span>rt_sigpending = <span class="number">127</span>,
+        <span class="doccomment">/// See [rt_sigtimedwait(2)](https://man7.org/linux/man-pages/man2/rt_sigtimedwait.2.html) for more info on this syscall.
+        </span>rt_sigtimedwait = <span class="number">128</span>,
+        <span class="doccomment">/// See [rt_sigqueueinfo(2)](https://man7.org/linux/man-pages/man2/rt_sigqueueinfo.2.html) for more info on this syscall.
+        </span>rt_sigqueueinfo = <span class="number">129</span>,
+        <span class="doccomment">/// See [rt_sigsuspend(2)](https://man7.org/linux/man-pages/man2/rt_sigsuspend.2.html) for more info on this syscall.
+        </span>rt_sigsuspend = <span class="number">130</span>,
+        <span class="doccomment">/// See [sigaltstack(2)](https://man7.org/linux/man-pages/man2/sigaltstack.2.html) for more info on this syscall.
+        </span>sigaltstack = <span class="number">131</span>,
+        <span class="doccomment">/// See [utime(2)](https://man7.org/linux/man-pages/man2/utime.2.html) for more info on this syscall.
+        </span>utime = <span class="number">132</span>,
+        <span class="doccomment">/// See [mknod(2)](https://man7.org/linux/man-pages/man2/mknod.2.html) for more info on this syscall.
+        </span>mknod = <span class="number">133</span>,
+        <span class="doccomment">/// NOTE: `uselib` is not implemented in the kernel.
+        </span>uselib = <span class="number">134</span>,
+        <span class="doccomment">/// See [personality(2)](https://man7.org/linux/man-pages/man2/personality.2.html) for more info on this syscall.
+        </span>personality = <span class="number">135</span>,
+        <span class="doccomment">/// See [ustat(2)](https://man7.org/linux/man-pages/man2/ustat.2.html) for more info on this syscall.
+        </span>ustat = <span class="number">136</span>,
+        <span class="doccomment">/// See [statfs(2)](https://man7.org/linux/man-pages/man2/statfs.2.html) for more info on this syscall.
+        </span>statfs = <span class="number">137</span>,
+        <span class="doccomment">/// See [fstatfs(2)](https://man7.org/linux/man-pages/man2/fstatfs.2.html) for more info on this syscall.
+        </span>fstatfs = <span class="number">138</span>,
+        <span class="doccomment">/// See [sysfs(2)](https://man7.org/linux/man-pages/man2/sysfs.2.html) for more info on this syscall.
+        </span>sysfs = <span class="number">139</span>,
+        <span class="doccomment">/// See [getpriority(2)](https://man7.org/linux/man-pages/man2/getpriority.2.html) for more info on this syscall.
+        </span>getpriority = <span class="number">140</span>,
+        <span class="doccomment">/// See [setpriority(2)](https://man7.org/linux/man-pages/man2/setpriority.2.html) for more info on this syscall.
+        </span>setpriority = <span class="number">141</span>,
+        <span class="doccomment">/// See [sched_setparam(2)](https://man7.org/linux/man-pages/man2/sched_setparam.2.html) for more info on this syscall.
+        </span>sched_setparam = <span class="number">142</span>,
+        <span class="doccomment">/// See [sched_getparam(2)](https://man7.org/linux/man-pages/man2/sched_getparam.2.html) for more info on this syscall.
+        </span>sched_getparam = <span class="number">143</span>,
+        <span class="doccomment">/// See [sched_setscheduler(2)](https://man7.org/linux/man-pages/man2/sched_setscheduler.2.html) for more info on this syscall.
+        </span>sched_setscheduler = <span class="number">144</span>,
+        <span class="doccomment">/// See [sched_getscheduler(2)](https://man7.org/linux/man-pages/man2/sched_getscheduler.2.html) for more info on this syscall.
+        </span>sched_getscheduler = <span class="number">145</span>,
+        <span class="doccomment">/// See [sched_get_priority_max(2)](https://man7.org/linux/man-pages/man2/sched_get_priority_max.2.html) for more info on this syscall.
+        </span>sched_get_priority_max = <span class="number">146</span>,
+        <span class="doccomment">/// See [sched_get_priority_min(2)](https://man7.org/linux/man-pages/man2/sched_get_priority_min.2.html) for more info on this syscall.
+        </span>sched_get_priority_min = <span class="number">147</span>,
+        <span class="doccomment">/// See [sched_rr_get_interval(2)](https://man7.org/linux/man-pages/man2/sched_rr_get_interval.2.html) for more info on this syscall.
+        </span>sched_rr_get_interval = <span class="number">148</span>,
+        <span class="doccomment">/// See [mlock(2)](https://man7.org/linux/man-pages/man2/mlock.2.html) for more info on this syscall.
+        </span>mlock = <span class="number">149</span>,
+        <span class="doccomment">/// See [munlock(2)](https://man7.org/linux/man-pages/man2/munlock.2.html) for more info on this syscall.
+        </span>munlock = <span class="number">150</span>,
+        <span class="doccomment">/// See [mlockall(2)](https://man7.org/linux/man-pages/man2/mlockall.2.html) for more info on this syscall.
+        </span>mlockall = <span class="number">151</span>,
+        <span class="doccomment">/// See [munlockall(2)](https://man7.org/linux/man-pages/man2/munlockall.2.html) for more info on this syscall.
+        </span>munlockall = <span class="number">152</span>,
+        <span class="doccomment">/// See [vhangup(2)](https://man7.org/linux/man-pages/man2/vhangup.2.html) for more info on this syscall.
+        </span>vhangup = <span class="number">153</span>,
+        <span class="doccomment">/// See [modify_ldt(2)](https://man7.org/linux/man-pages/man2/modify_ldt.2.html) for more info on this syscall.
+        </span>modify_ldt = <span class="number">154</span>,
+        <span class="doccomment">/// See [pivot_root(2)](https://man7.org/linux/man-pages/man2/pivot_root.2.html) for more info on this syscall.
+        </span>pivot_root = <span class="number">155</span>,
+        <span class="doccomment">/// See [_sysctl(2)](https://man7.org/linux/man-pages/man2/_sysctl.2.html) for more info on this syscall.
+        </span>_sysctl = <span class="number">156</span>,
+        <span class="doccomment">/// See [prctl(2)](https://man7.org/linux/man-pages/man2/prctl.2.html) for more info on this syscall.
+        </span>prctl = <span class="number">157</span>,
+        <span class="doccomment">/// See [arch_prctl(2)](https://man7.org/linux/man-pages/man2/arch_prctl.2.html) for more info on this syscall.
+        </span>arch_prctl = <span class="number">158</span>,
+        <span class="doccomment">/// See [adjtimex(2)](https://man7.org/linux/man-pages/man2/adjtimex.2.html) for more info on this syscall.
+        </span>adjtimex = <span class="number">159</span>,
+        <span class="doccomment">/// See [setrlimit(2)](https://man7.org/linux/man-pages/man2/setrlimit.2.html) for more info on this syscall.
+        </span>setrlimit = <span class="number">160</span>,
+        <span class="doccomment">/// See [chroot(2)](https://man7.org/linux/man-pages/man2/chroot.2.html) for more info on this syscall.
+        </span>chroot = <span class="number">161</span>,
+        <span class="doccomment">/// See [sync(2)](https://man7.org/linux/man-pages/man2/sync.2.html) for more info on this syscall.
+        </span>sync = <span class="number">162</span>,
+        <span class="doccomment">/// See [acct(2)](https://man7.org/linux/man-pages/man2/acct.2.html) for more info on this syscall.
+        </span>acct = <span class="number">163</span>,
+        <span class="doccomment">/// See [settimeofday(2)](https://man7.org/linux/man-pages/man2/settimeofday.2.html) for more info on this syscall.
+        </span>settimeofday = <span class="number">164</span>,
+        <span class="doccomment">/// See [mount(2)](https://man7.org/linux/man-pages/man2/mount.2.html) for more info on this syscall.
+        </span>mount = <span class="number">165</span>,
+        <span class="doccomment">/// See [umount2(2)](https://man7.org/linux/man-pages/man2/umount2.2.html) for more info on this syscall.
+        </span>umount2 = <span class="number">166</span>,
+        <span class="doccomment">/// See [swapon(2)](https://man7.org/linux/man-pages/man2/swapon.2.html) for more info on this syscall.
+        </span>swapon = <span class="number">167</span>,
+        <span class="doccomment">/// See [swapoff(2)](https://man7.org/linux/man-pages/man2/swapoff.2.html) for more info on this syscall.
+        </span>swapoff = <span class="number">168</span>,
+        <span class="doccomment">/// See [reboot(2)](https://man7.org/linux/man-pages/man2/reboot.2.html) for more info on this syscall.
+        </span>reboot = <span class="number">169</span>,
+        <span class="doccomment">/// See [sethostname(2)](https://man7.org/linux/man-pages/man2/sethostname.2.html) for more info on this syscall.
+        </span>sethostname = <span class="number">170</span>,
+        <span class="doccomment">/// See [setdomainname(2)](https://man7.org/linux/man-pages/man2/setdomainname.2.html) for more info on this syscall.
+        </span>setdomainname = <span class="number">171</span>,
+        <span class="doccomment">/// See [iopl(2)](https://man7.org/linux/man-pages/man2/iopl.2.html) for more info on this syscall.
+        </span>iopl = <span class="number">172</span>,
+        <span class="doccomment">/// See [ioperm(2)](https://man7.org/linux/man-pages/man2/ioperm.2.html) for more info on this syscall.
+        </span>ioperm = <span class="number">173</span>,
+        <span class="doccomment">/// NOTE: `create_module` is not implemented in the kernel.
+        </span>create_module = <span class="number">174</span>,
+        <span class="doccomment">/// See [init_module(2)](https://man7.org/linux/man-pages/man2/init_module.2.html) for more info on this syscall.
+        </span>init_module = <span class="number">175</span>,
+        <span class="doccomment">/// See [delete_module(2)](https://man7.org/linux/man-pages/man2/delete_module.2.html) for more info on this syscall.
+        </span>delete_module = <span class="number">176</span>,
+        <span class="doccomment">/// NOTE: `get_kernel_syms` is not implemented in the kernel.
+        </span>get_kernel_syms = <span class="number">177</span>,
+        <span class="doccomment">/// NOTE: `query_module` is not implemented in the kernel.
+        </span>query_module = <span class="number">178</span>,
+        <span class="doccomment">/// See [quotactl(2)](https://man7.org/linux/man-pages/man2/quotactl.2.html) for more info on this syscall.
+        </span>quotactl = <span class="number">179</span>,
+        <span class="doccomment">/// NOTE: `nfsservctl` is not implemented in the kernel.
+        </span>nfsservctl = <span class="number">180</span>,
+        <span class="doccomment">/// NOTE: `getpmsg` is not implemented in the kernel.
+        </span>getpmsg = <span class="number">181</span>,
+        <span class="doccomment">/// NOTE: `putpmsg` is not implemented in the kernel.
+        </span>putpmsg = <span class="number">182</span>,
+        <span class="doccomment">/// NOTE: `afs_syscall` is not implemented in the kernel.
+        </span>afs_syscall = <span class="number">183</span>,
+        <span class="doccomment">/// NOTE: `tuxcall` is not implemented in the kernel.
+        </span>tuxcall = <span class="number">184</span>,
+        <span class="doccomment">/// NOTE: `security` is not implemented in the kernel.
+        </span>security = <span class="number">185</span>,
+        <span class="doccomment">/// See [gettid(2)](https://man7.org/linux/man-pages/man2/gettid.2.html) for more info on this syscall.
+        </span>gettid = <span class="number">186</span>,
+        <span class="doccomment">/// See [readahead(2)](https://man7.org/linux/man-pages/man2/readahead.2.html) for more info on this syscall.
+        </span>readahead = <span class="number">187</span>,
+        <span class="doccomment">/// See [setxattr(2)](https://man7.org/linux/man-pages/man2/setxattr.2.html) for more info on this syscall.
+        </span>setxattr = <span class="number">188</span>,
+        <span class="doccomment">/// See [lsetxattr(2)](https://man7.org/linux/man-pages/man2/lsetxattr.2.html) for more info on this syscall.
+        </span>lsetxattr = <span class="number">189</span>,
+        <span class="doccomment">/// See [fsetxattr(2)](https://man7.org/linux/man-pages/man2/fsetxattr.2.html) for more info on this syscall.
+        </span>fsetxattr = <span class="number">190</span>,
+        <span class="doccomment">/// See [getxattr(2)](https://man7.org/linux/man-pages/man2/getxattr.2.html) for more info on this syscall.
+        </span>getxattr = <span class="number">191</span>,
+        <span class="doccomment">/// See [lgetxattr(2)](https://man7.org/linux/man-pages/man2/lgetxattr.2.html) for more info on this syscall.
+        </span>lgetxattr = <span class="number">192</span>,
+        <span class="doccomment">/// See [fgetxattr(2)](https://man7.org/linux/man-pages/man2/fgetxattr.2.html) for more info on this syscall.
+        </span>fgetxattr = <span class="number">193</span>,
+        <span class="doccomment">/// See [listxattr(2)](https://man7.org/linux/man-pages/man2/listxattr.2.html) for more info on this syscall.
+        </span>listxattr = <span class="number">194</span>,
+        <span class="doccomment">/// See [llistxattr(2)](https://man7.org/linux/man-pages/man2/llistxattr.2.html) for more info on this syscall.
+        </span>llistxattr = <span class="number">195</span>,
+        <span class="doccomment">/// See [flistxattr(2)](https://man7.org/linux/man-pages/man2/flistxattr.2.html) for more info on this syscall.
+        </span>flistxattr = <span class="number">196</span>,
+        <span class="doccomment">/// See [removexattr(2)](https://man7.org/linux/man-pages/man2/removexattr.2.html) for more info on this syscall.
+        </span>removexattr = <span class="number">197</span>,
+        <span class="doccomment">/// See [lremovexattr(2)](https://man7.org/linux/man-pages/man2/lremovexattr.2.html) for more info on this syscall.
+        </span>lremovexattr = <span class="number">198</span>,
+        <span class="doccomment">/// See [fremovexattr(2)](https://man7.org/linux/man-pages/man2/fremovexattr.2.html) for more info on this syscall.
+        </span>fremovexattr = <span class="number">199</span>,
+        <span class="doccomment">/// See [tkill(2)](https://man7.org/linux/man-pages/man2/tkill.2.html) for more info on this syscall.
+        </span>tkill = <span class="number">200</span>,
+        <span class="doccomment">/// See [time(2)](https://man7.org/linux/man-pages/man2/time.2.html) for more info on this syscall.
+        </span>time = <span class="number">201</span>,
+        <span class="doccomment">/// See [futex(2)](https://man7.org/linux/man-pages/man2/futex.2.html) for more info on this syscall.
+        </span>futex = <span class="number">202</span>,
+        <span class="doccomment">/// See [sched_setaffinity(2)](https://man7.org/linux/man-pages/man2/sched_setaffinity.2.html) for more info on this syscall.
+        </span>sched_setaffinity = <span class="number">203</span>,
+        <span class="doccomment">/// See [sched_getaffinity(2)](https://man7.org/linux/man-pages/man2/sched_getaffinity.2.html) for more info on this syscall.
+        </span>sched_getaffinity = <span class="number">204</span>,
+        <span class="doccomment">/// NOTE: `set_thread_area` is not implemented in the kernel.
+        </span>set_thread_area = <span class="number">205</span>,
+        <span class="doccomment">/// See [io_setup(2)](https://man7.org/linux/man-pages/man2/io_setup.2.html) for more info on this syscall.
+        </span>io_setup = <span class="number">206</span>,
+        <span class="doccomment">/// See [io_destroy(2)](https://man7.org/linux/man-pages/man2/io_destroy.2.html) for more info on this syscall.
+        </span>io_destroy = <span class="number">207</span>,
+        <span class="doccomment">/// See [io_getevents(2)](https://man7.org/linux/man-pages/man2/io_getevents.2.html) for more info on this syscall.
+        </span>io_getevents = <span class="number">208</span>,
+        <span class="doccomment">/// See [io_submit(2)](https://man7.org/linux/man-pages/man2/io_submit.2.html) for more info on this syscall.
+        </span>io_submit = <span class="number">209</span>,
+        <span class="doccomment">/// See [io_cancel(2)](https://man7.org/linux/man-pages/man2/io_cancel.2.html) for more info on this syscall.
+        </span>io_cancel = <span class="number">210</span>,
+        <span class="doccomment">/// NOTE: `get_thread_area` is not implemented in the kernel.
+        </span>get_thread_area = <span class="number">211</span>,
+        <span class="doccomment">/// See [lookup_dcookie(2)](https://man7.org/linux/man-pages/man2/lookup_dcookie.2.html) for more info on this syscall.
+        </span>lookup_dcookie = <span class="number">212</span>,
+        <span class="doccomment">/// See [epoll_create(2)](https://man7.org/linux/man-pages/man2/epoll_create.2.html) for more info on this syscall.
+        </span>epoll_create = <span class="number">213</span>,
+        <span class="doccomment">/// NOTE: `epoll_ctl_old` is not implemented in the kernel.
+        </span>epoll_ctl_old = <span class="number">214</span>,
+        <span class="doccomment">/// NOTE: `epoll_wait_old` is not implemented in the kernel.
+        </span>epoll_wait_old = <span class="number">215</span>,
+        <span class="doccomment">/// See [remap_file_pages(2)](https://man7.org/linux/man-pages/man2/remap_file_pages.2.html) for more info on this syscall.
+        </span>remap_file_pages = <span class="number">216</span>,
+        <span class="doccomment">/// See [getdents64(2)](https://man7.org/linux/man-pages/man2/getdents64.2.html) for more info on this syscall.
+        </span>getdents64 = <span class="number">217</span>,
+        <span class="doccomment">/// See [set_tid_address(2)](https://man7.org/linux/man-pages/man2/set_tid_address.2.html) for more info on this syscall.
+        </span>set_tid_address = <span class="number">218</span>,
+        <span class="doccomment">/// See [restart_syscall(2)](https://man7.org/linux/man-pages/man2/restart_syscall.2.html) for more info on this syscall.
+        </span>restart_syscall = <span class="number">219</span>,
+        <span class="doccomment">/// See [semtimedop(2)](https://man7.org/linux/man-pages/man2/semtimedop.2.html) for more info on this syscall.
+        </span>semtimedop = <span class="number">220</span>,
+        <span class="doccomment">/// See [fadvise64(2)](https://man7.org/linux/man-pages/man2/fadvise64.2.html) for more info on this syscall.
+        </span>fadvise64 = <span class="number">221</span>,
+        <span class="doccomment">/// See [timer_create(2)](https://man7.org/linux/man-pages/man2/timer_create.2.html) for more info on this syscall.
+        </span>timer_create = <span class="number">222</span>,
+        <span class="doccomment">/// See [timer_settime(2)](https://man7.org/linux/man-pages/man2/timer_settime.2.html) for more info on this syscall.
+        </span>timer_settime = <span class="number">223</span>,
+        <span class="doccomment">/// See [timer_gettime(2)](https://man7.org/linux/man-pages/man2/timer_gettime.2.html) for more info on this syscall.
+        </span>timer_gettime = <span class="number">224</span>,
+        <span class="doccomment">/// See [timer_getoverrun(2)](https://man7.org/linux/man-pages/man2/timer_getoverrun.2.html) for more info on this syscall.
+        </span>timer_getoverrun = <span class="number">225</span>,
+        <span class="doccomment">/// See [timer_delete(2)](https://man7.org/linux/man-pages/man2/timer_delete.2.html) for more info on this syscall.
+        </span>timer_delete = <span class="number">226</span>,
+        <span class="doccomment">/// See [clock_settime(2)](https://man7.org/linux/man-pages/man2/clock_settime.2.html) for more info on this syscall.
+        </span>clock_settime = <span class="number">227</span>,
+        <span class="doccomment">/// See [clock_gettime(2)](https://man7.org/linux/man-pages/man2/clock_gettime.2.html) for more info on this syscall.
+        </span>clock_gettime = <span class="number">228</span>,
+        <span class="doccomment">/// See [clock_getres(2)](https://man7.org/linux/man-pages/man2/clock_getres.2.html) for more info on this syscall.
+        </span>clock_getres = <span class="number">229</span>,
+        <span class="doccomment">/// See [clock_nanosleep(2)](https://man7.org/linux/man-pages/man2/clock_nanosleep.2.html) for more info on this syscall.
+        </span>clock_nanosleep = <span class="number">230</span>,
+        <span class="doccomment">/// See [exit_group(2)](https://man7.org/linux/man-pages/man2/exit_group.2.html) for more info on this syscall.
+        </span>exit_group = <span class="number">231</span>,
+        <span class="doccomment">/// See [epoll_wait(2)](https://man7.org/linux/man-pages/man2/epoll_wait.2.html) for more info on this syscall.
+        </span>epoll_wait = <span class="number">232</span>,
+        <span class="doccomment">/// See [epoll_ctl(2)](https://man7.org/linux/man-pages/man2/epoll_ctl.2.html) for more info on this syscall.
+        </span>epoll_ctl = <span class="number">233</span>,
+        <span class="doccomment">/// See [tgkill(2)](https://man7.org/linux/man-pages/man2/tgkill.2.html) for more info on this syscall.
+        </span>tgkill = <span class="number">234</span>,
+        <span class="doccomment">/// See [utimes(2)](https://man7.org/linux/man-pages/man2/utimes.2.html) for more info on this syscall.
+        </span>utimes = <span class="number">235</span>,
+        <span class="doccomment">/// NOTE: `vserver` is not implemented in the kernel.
+        </span>vserver = <span class="number">236</span>,
+        <span class="doccomment">/// See [mbind(2)](https://man7.org/linux/man-pages/man2/mbind.2.html) for more info on this syscall.
+        </span>mbind = <span class="number">237</span>,
+        <span class="doccomment">/// See [set_mempolicy(2)](https://man7.org/linux/man-pages/man2/set_mempolicy.2.html) for more info on this syscall.
+        </span>set_mempolicy = <span class="number">238</span>,
+        <span class="doccomment">/// See [get_mempolicy(2)](https://man7.org/linux/man-pages/man2/get_mempolicy.2.html) for more info on this syscall.
+        </span>get_mempolicy = <span class="number">239</span>,
+        <span class="doccomment">/// See [mq_open(2)](https://man7.org/linux/man-pages/man2/mq_open.2.html) for more info on this syscall.
+        </span>mq_open = <span class="number">240</span>,
+        <span class="doccomment">/// See [mq_unlink(2)](https://man7.org/linux/man-pages/man2/mq_unlink.2.html) for more info on this syscall.
+        </span>mq_unlink = <span class="number">241</span>,
+        <span class="doccomment">/// See [mq_timedsend(2)](https://man7.org/linux/man-pages/man2/mq_timedsend.2.html) for more info on this syscall.
+        </span>mq_timedsend = <span class="number">242</span>,
+        <span class="doccomment">/// See [mq_timedreceive(2)](https://man7.org/linux/man-pages/man2/mq_timedreceive.2.html) for more info on this syscall.
+        </span>mq_timedreceive = <span class="number">243</span>,
+        <span class="doccomment">/// See [mq_notify(2)](https://man7.org/linux/man-pages/man2/mq_notify.2.html) for more info on this syscall.
+        </span>mq_notify = <span class="number">244</span>,
+        <span class="doccomment">/// See [mq_getsetattr(2)](https://man7.org/linux/man-pages/man2/mq_getsetattr.2.html) for more info on this syscall.
+        </span>mq_getsetattr = <span class="number">245</span>,
+        <span class="doccomment">/// See [kexec_load(2)](https://man7.org/linux/man-pages/man2/kexec_load.2.html) for more info on this syscall.
+        </span>kexec_load = <span class="number">246</span>,
+        <span class="doccomment">/// See [waitid(2)](https://man7.org/linux/man-pages/man2/waitid.2.html) for more info on this syscall.
+        </span>waitid = <span class="number">247</span>,
+        <span class="doccomment">/// See [add_key(2)](https://man7.org/linux/man-pages/man2/add_key.2.html) for more info on this syscall.
+        </span>add_key = <span class="number">248</span>,
+        <span class="doccomment">/// See [request_key(2)](https://man7.org/linux/man-pages/man2/request_key.2.html) for more info on this syscall.
+        </span>request_key = <span class="number">249</span>,
+        <span class="doccomment">/// See [keyctl(2)](https://man7.org/linux/man-pages/man2/keyctl.2.html) for more info on this syscall.
+        </span>keyctl = <span class="number">250</span>,
+        <span class="doccomment">/// See [ioprio_set(2)](https://man7.org/linux/man-pages/man2/ioprio_set.2.html) for more info on this syscall.
+        </span>ioprio_set = <span class="number">251</span>,
+        <span class="doccomment">/// See [ioprio_get(2)](https://man7.org/linux/man-pages/man2/ioprio_get.2.html) for more info on this syscall.
+        </span>ioprio_get = <span class="number">252</span>,
+        <span class="doccomment">/// See [inotify_init(2)](https://man7.org/linux/man-pages/man2/inotify_init.2.html) for more info on this syscall.
+        </span>inotify_init = <span class="number">253</span>,
+        <span class="doccomment">/// See [inotify_add_watch(2)](https://man7.org/linux/man-pages/man2/inotify_add_watch.2.html) for more info on this syscall.
+        </span>inotify_add_watch = <span class="number">254</span>,
+        <span class="doccomment">/// See [inotify_rm_watch(2)](https://man7.org/linux/man-pages/man2/inotify_rm_watch.2.html) for more info on this syscall.
+        </span>inotify_rm_watch = <span class="number">255</span>,
+        <span class="doccomment">/// See [migrate_pages(2)](https://man7.org/linux/man-pages/man2/migrate_pages.2.html) for more info on this syscall.
+        </span>migrate_pages = <span class="number">256</span>,
+        <span class="doccomment">/// See [openat(2)](https://man7.org/linux/man-pages/man2/openat.2.html) for more info on this syscall.
+        </span>openat = <span class="number">257</span>,
+        <span class="doccomment">/// See [mkdirat(2)](https://man7.org/linux/man-pages/man2/mkdirat.2.html) for more info on this syscall.
+        </span>mkdirat = <span class="number">258</span>,
+        <span class="doccomment">/// See [mknodat(2)](https://man7.org/linux/man-pages/man2/mknodat.2.html) for more info on this syscall.
+        </span>mknodat = <span class="number">259</span>,
+        <span class="doccomment">/// See [fchownat(2)](https://man7.org/linux/man-pages/man2/fchownat.2.html) for more info on this syscall.
+        </span>fchownat = <span class="number">260</span>,
+        <span class="doccomment">/// See [futimesat(2)](https://man7.org/linux/man-pages/man2/futimesat.2.html) for more info on this syscall.
+        </span>futimesat = <span class="number">261</span>,
+        <span class="doccomment">/// See [newfstatat(2)](https://man7.org/linux/man-pages/man2/newfstatat.2.html) for more info on this syscall.
+        </span>newfstatat = <span class="number">262</span>,
+        <span class="doccomment">/// See [unlinkat(2)](https://man7.org/linux/man-pages/man2/unlinkat.2.html) for more info on this syscall.
+        </span>unlinkat = <span class="number">263</span>,
+        <span class="doccomment">/// See [renameat(2)](https://man7.org/linux/man-pages/man2/renameat.2.html) for more info on this syscall.
+        </span>renameat = <span class="number">264</span>,
+        <span class="doccomment">/// See [linkat(2)](https://man7.org/linux/man-pages/man2/linkat.2.html) for more info on this syscall.
+        </span>linkat = <span class="number">265</span>,
+        <span class="doccomment">/// See [symlinkat(2)](https://man7.org/linux/man-pages/man2/symlinkat.2.html) for more info on this syscall.
+        </span>symlinkat = <span class="number">266</span>,
+        <span class="doccomment">/// See [readlinkat(2)](https://man7.org/linux/man-pages/man2/readlinkat.2.html) for more info on this syscall.
+        </span>readlinkat = <span class="number">267</span>,
+        <span class="doccomment">/// See [fchmodat(2)](https://man7.org/linux/man-pages/man2/fchmodat.2.html) for more info on this syscall.
+        </span>fchmodat = <span class="number">268</span>,
+        <span class="doccomment">/// See [faccessat(2)](https://man7.org/linux/man-pages/man2/faccessat.2.html) for more info on this syscall.
+        </span>faccessat = <span class="number">269</span>,
+        <span class="doccomment">/// See [pselect6(2)](https://man7.org/linux/man-pages/man2/pselect6.2.html) for more info on this syscall.
+        </span>pselect6 = <span class="number">270</span>,
+        <span class="doccomment">/// See [ppoll(2)](https://man7.org/linux/man-pages/man2/ppoll.2.html) for more info on this syscall.
+        </span>ppoll = <span class="number">271</span>,
+        <span class="doccomment">/// See [unshare(2)](https://man7.org/linux/man-pages/man2/unshare.2.html) for more info on this syscall.
+        </span>unshare = <span class="number">272</span>,
+        <span class="doccomment">/// See [set_robust_list(2)](https://man7.org/linux/man-pages/man2/set_robust_list.2.html) for more info on this syscall.
+        </span>set_robust_list = <span class="number">273</span>,
+        <span class="doccomment">/// See [get_robust_list(2)](https://man7.org/linux/man-pages/man2/get_robust_list.2.html) for more info on this syscall.
+        </span>get_robust_list = <span class="number">274</span>,
+        <span class="doccomment">/// See [splice(2)](https://man7.org/linux/man-pages/man2/splice.2.html) for more info on this syscall.
+        </span>splice = <span class="number">275</span>,
+        <span class="doccomment">/// See [tee(2)](https://man7.org/linux/man-pages/man2/tee.2.html) for more info on this syscall.
+        </span>tee = <span class="number">276</span>,
+        <span class="doccomment">/// See [sync_file_range(2)](https://man7.org/linux/man-pages/man2/sync_file_range.2.html) for more info on this syscall.
+        </span>sync_file_range = <span class="number">277</span>,
+        <span class="doccomment">/// See [vmsplice(2)](https://man7.org/linux/man-pages/man2/vmsplice.2.html) for more info on this syscall.
+        </span>vmsplice = <span class="number">278</span>,
+        <span class="doccomment">/// See [move_pages(2)](https://man7.org/linux/man-pages/man2/move_pages.2.html) for more info on this syscall.
+        </span>move_pages = <span class="number">279</span>,
+        <span class="doccomment">/// See [utimensat(2)](https://man7.org/linux/man-pages/man2/utimensat.2.html) for more info on this syscall.
+        </span>utimensat = <span class="number">280</span>,
+        <span class="doccomment">/// See [epoll_pwait(2)](https://man7.org/linux/man-pages/man2/epoll_pwait.2.html) for more info on this syscall.
+        </span>epoll_pwait = <span class="number">281</span>,
+        <span class="doccomment">/// See [signalfd(2)](https://man7.org/linux/man-pages/man2/signalfd.2.html) for more info on this syscall.
+        </span>signalfd = <span class="number">282</span>,
+        <span class="doccomment">/// See [timerfd_create(2)](https://man7.org/linux/man-pages/man2/timerfd_create.2.html) for more info on this syscall.
+        </span>timerfd_create = <span class="number">283</span>,
+        <span class="doccomment">/// See [eventfd(2)](https://man7.org/linux/man-pages/man2/eventfd.2.html) for more info on this syscall.
+        </span>eventfd = <span class="number">284</span>,
+        <span class="doccomment">/// See [fallocate(2)](https://man7.org/linux/man-pages/man2/fallocate.2.html) for more info on this syscall.
+        </span>fallocate = <span class="number">285</span>,
+        <span class="doccomment">/// See [timerfd_settime(2)](https://man7.org/linux/man-pages/man2/timerfd_settime.2.html) for more info on this syscall.
+        </span>timerfd_settime = <span class="number">286</span>,
+        <span class="doccomment">/// See [timerfd_gettime(2)](https://man7.org/linux/man-pages/man2/timerfd_gettime.2.html) for more info on this syscall.
+        </span>timerfd_gettime = <span class="number">287</span>,
+        <span class="doccomment">/// See [accept4(2)](https://man7.org/linux/man-pages/man2/accept4.2.html) for more info on this syscall.
+        </span>accept4 = <span class="number">288</span>,
+        <span class="doccomment">/// See [signalfd4(2)](https://man7.org/linux/man-pages/man2/signalfd4.2.html) for more info on this syscall.
+        </span>signalfd4 = <span class="number">289</span>,
+        <span class="doccomment">/// See [eventfd2(2)](https://man7.org/linux/man-pages/man2/eventfd2.2.html) for more info on this syscall.
+        </span>eventfd2 = <span class="number">290</span>,
+        <span class="doccomment">/// See [epoll_create1(2)](https://man7.org/linux/man-pages/man2/epoll_create1.2.html) for more info on this syscall.
+        </span>epoll_create1 = <span class="number">291</span>,
+        <span class="doccomment">/// See [dup3(2)](https://man7.org/linux/man-pages/man2/dup3.2.html) for more info on this syscall.
+        </span>dup3 = <span class="number">292</span>,
+        <span class="doccomment">/// See [pipe2(2)](https://man7.org/linux/man-pages/man2/pipe2.2.html) for more info on this syscall.
+        </span>pipe2 = <span class="number">293</span>,
+        <span class="doccomment">/// See [inotify_init1(2)](https://man7.org/linux/man-pages/man2/inotify_init1.2.html) for more info on this syscall.
+        </span>inotify_init1 = <span class="number">294</span>,
+        <span class="doccomment">/// See [preadv(2)](https://man7.org/linux/man-pages/man2/preadv.2.html) for more info on this syscall.
+        </span>preadv = <span class="number">295</span>,
+        <span class="doccomment">/// See [pwritev(2)](https://man7.org/linux/man-pages/man2/pwritev.2.html) for more info on this syscall.
+        </span>pwritev = <span class="number">296</span>,
+        <span class="doccomment">/// See [rt_tgsigqueueinfo(2)](https://man7.org/linux/man-pages/man2/rt_tgsigqueueinfo.2.html) for more info on this syscall.
+        </span>rt_tgsigqueueinfo = <span class="number">297</span>,
+        <span class="doccomment">/// See [perf_event_open(2)](https://man7.org/linux/man-pages/man2/perf_event_open.2.html) for more info on this syscall.
+        </span>perf_event_open = <span class="number">298</span>,
+        <span class="doccomment">/// See [recvmmsg(2)](https://man7.org/linux/man-pages/man2/recvmmsg.2.html) for more info on this syscall.
+        </span>recvmmsg = <span class="number">299</span>,
+        <span class="doccomment">/// See [fanotify_init(2)](https://man7.org/linux/man-pages/man2/fanotify_init.2.html) for more info on this syscall.
+        </span>fanotify_init = <span class="number">300</span>,
+        <span class="doccomment">/// See [fanotify_mark(2)](https://man7.org/linux/man-pages/man2/fanotify_mark.2.html) for more info on this syscall.
+        </span>fanotify_mark = <span class="number">301</span>,
+        <span class="doccomment">/// See [prlimit64(2)](https://man7.org/linux/man-pages/man2/prlimit64.2.html) for more info on this syscall.
+        </span>prlimit64 = <span class="number">302</span>,
+        <span class="doccomment">/// See [name_to_handle_at(2)](https://man7.org/linux/man-pages/man2/name_to_handle_at.2.html) for more info on this syscall.
+        </span>name_to_handle_at = <span class="number">303</span>,
+        <span class="doccomment">/// See [open_by_handle_at(2)](https://man7.org/linux/man-pages/man2/open_by_handle_at.2.html) for more info on this syscall.
+        </span>open_by_handle_at = <span class="number">304</span>,
+        <span class="doccomment">/// See [clock_adjtime(2)](https://man7.org/linux/man-pages/man2/clock_adjtime.2.html) for more info on this syscall.
+        </span>clock_adjtime = <span class="number">305</span>,
+        <span class="doccomment">/// See [syncfs(2)](https://man7.org/linux/man-pages/man2/syncfs.2.html) for more info on this syscall.
+        </span>syncfs = <span class="number">306</span>,
+        <span class="doccomment">/// See [sendmmsg(2)](https://man7.org/linux/man-pages/man2/sendmmsg.2.html) for more info on this syscall.
+        </span>sendmmsg = <span class="number">307</span>,
+        <span class="doccomment">/// See [setns(2)](https://man7.org/linux/man-pages/man2/setns.2.html) for more info on this syscall.
+        </span>setns = <span class="number">308</span>,
+        <span class="doccomment">/// See [getcpu(2)](https://man7.org/linux/man-pages/man2/getcpu.2.html) for more info on this syscall.
+        </span>getcpu = <span class="number">309</span>,
+        <span class="doccomment">/// See [process_vm_readv(2)](https://man7.org/linux/man-pages/man2/process_vm_readv.2.html) for more info on this syscall.
+        </span>process_vm_readv = <span class="number">310</span>,
+        <span class="doccomment">/// See [process_vm_writev(2)](https://man7.org/linux/man-pages/man2/process_vm_writev.2.html) for more info on this syscall.
+        </span>process_vm_writev = <span class="number">311</span>,
+        <span class="doccomment">/// See [kcmp(2)](https://man7.org/linux/man-pages/man2/kcmp.2.html) for more info on this syscall.
+        </span>kcmp = <span class="number">312</span>,
+        <span class="doccomment">/// See [finit_module(2)](https://man7.org/linux/man-pages/man2/finit_module.2.html) for more info on this syscall.
+        </span>finit_module = <span class="number">313</span>,
+        <span class="doccomment">/// See [sched_setattr(2)](https://man7.org/linux/man-pages/man2/sched_setattr.2.html) for more info on this syscall.
+        </span>sched_setattr = <span class="number">314</span>,
+        <span class="doccomment">/// See [sched_getattr(2)](https://man7.org/linux/man-pages/man2/sched_getattr.2.html) for more info on this syscall.
+        </span>sched_getattr = <span class="number">315</span>,
+        <span class="doccomment">/// See [renameat2(2)](https://man7.org/linux/man-pages/man2/renameat2.2.html) for more info on this syscall.
+        </span>renameat2 = <span class="number">316</span>,
+        <span class="doccomment">/// See [seccomp(2)](https://man7.org/linux/man-pages/man2/seccomp.2.html) for more info on this syscall.
+        </span>seccomp = <span class="number">317</span>,
+        <span class="doccomment">/// See [getrandom(2)](https://man7.org/linux/man-pages/man2/getrandom.2.html) for more info on this syscall.
+        </span>getrandom = <span class="number">318</span>,
+        <span class="doccomment">/// See [memfd_create(2)](https://man7.org/linux/man-pages/man2/memfd_create.2.html) for more info on this syscall.
+        </span>memfd_create = <span class="number">319</span>,
+        <span class="doccomment">/// See [kexec_file_load(2)](https://man7.org/linux/man-pages/man2/kexec_file_load.2.html) for more info on this syscall.
+        </span>kexec_file_load = <span class="number">320</span>,
+        <span class="doccomment">/// See [bpf(2)](https://man7.org/linux/man-pages/man2/bpf.2.html) for more info on this syscall.
+        </span>bpf = <span class="number">321</span>,
+        <span class="doccomment">/// See [execveat(2)](https://man7.org/linux/man-pages/man2/execveat.2.html) for more info on this syscall.
+        </span>execveat = <span class="number">322</span>,
+        <span class="doccomment">/// See [userfaultfd(2)](https://man7.org/linux/man-pages/man2/userfaultfd.2.html) for more info on this syscall.
+        </span>userfaultfd = <span class="number">323</span>,
+        <span class="doccomment">/// See [membarrier(2)](https://man7.org/linux/man-pages/man2/membarrier.2.html) for more info on this syscall.
+        </span>membarrier = <span class="number">324</span>,
+        <span class="doccomment">/// See [mlock2(2)](https://man7.org/linux/man-pages/man2/mlock2.2.html) for more info on this syscall.
+        </span>mlock2 = <span class="number">325</span>,
+        <span class="doccomment">/// See [copy_file_range(2)](https://man7.org/linux/man-pages/man2/copy_file_range.2.html) for more info on this syscall.
+        </span>copy_file_range = <span class="number">326</span>,
+        <span class="doccomment">/// See [preadv2(2)](https://man7.org/linux/man-pages/man2/preadv2.2.html) for more info on this syscall.
+        </span>preadv2 = <span class="number">327</span>,
+        <span class="doccomment">/// See [pwritev2(2)](https://man7.org/linux/man-pages/man2/pwritev2.2.html) for more info on this syscall.
+        </span>pwritev2 = <span class="number">328</span>,
+        <span class="doccomment">/// See [pkey_mprotect(2)](https://man7.org/linux/man-pages/man2/pkey_mprotect.2.html) for more info on this syscall.
+        </span>pkey_mprotect = <span class="number">329</span>,
+        <span class="doccomment">/// See [pkey_alloc(2)](https://man7.org/linux/man-pages/man2/pkey_alloc.2.html) for more info on this syscall.
+        </span>pkey_alloc = <span class="number">330</span>,
+        <span class="doccomment">/// See [pkey_free(2)](https://man7.org/linux/man-pages/man2/pkey_free.2.html) for more info on this syscall.
+        </span>pkey_free = <span class="number">331</span>,
+        <span class="doccomment">/// See [statx(2)](https://man7.org/linux/man-pages/man2/statx.2.html) for more info on this syscall.
+        </span>statx = <span class="number">332</span>,
+        <span class="doccomment">/// See [io_pgetevents(2)](https://man7.org/linux/man-pages/man2/io_pgetevents.2.html) for more info on this syscall.
+        </span>io_pgetevents = <span class="number">333</span>,
+        <span class="doccomment">/// See [rseq(2)](https://man7.org/linux/man-pages/man2/rseq.2.html) for more info on this syscall.
+        </span>rseq = <span class="number">334</span>,
+        <span class="doccomment">/// See [pidfd_send_signal(2)](https://man7.org/linux/man-pages/man2/pidfd_send_signal.2.html) for more info on this syscall.
+        </span>pidfd_send_signal = <span class="number">424</span>,
+        <span class="doccomment">/// See [io_uring_setup(2)](https://man7.org/linux/man-pages/man2/io_uring_setup.2.html) for more info on this syscall.
+        </span>io_uring_setup = <span class="number">425</span>,
+        <span class="doccomment">/// See [io_uring_enter(2)](https://man7.org/linux/man-pages/man2/io_uring_enter.2.html) for more info on this syscall.
+        </span>io_uring_enter = <span class="number">426</span>,
+        <span class="doccomment">/// See [io_uring_register(2)](https://man7.org/linux/man-pages/man2/io_uring_register.2.html) for more info on this syscall.
+        </span>io_uring_register = <span class="number">427</span>,
+        <span class="doccomment">/// See [open_tree(2)](https://man7.org/linux/man-pages/man2/open_tree.2.html) for more info on this syscall.
+        </span>open_tree = <span class="number">428</span>,
+        <span class="doccomment">/// See [move_mount(2)](https://man7.org/linux/man-pages/man2/move_mount.2.html) for more info on this syscall.
+        </span>move_mount = <span class="number">429</span>,
+        <span class="doccomment">/// See [fsopen(2)](https://man7.org/linux/man-pages/man2/fsopen.2.html) for more info on this syscall.
+        </span>fsopen = <span class="number">430</span>,
+        <span class="doccomment">/// See [fsconfig(2)](https://man7.org/linux/man-pages/man2/fsconfig.2.html) for more info on this syscall.
+        </span>fsconfig = <span class="number">431</span>,
+        <span class="doccomment">/// See [fsmount(2)](https://man7.org/linux/man-pages/man2/fsmount.2.html) for more info on this syscall.
+        </span>fsmount = <span class="number">432</span>,
+        <span class="doccomment">/// See [fspick(2)](https://man7.org/linux/man-pages/man2/fspick.2.html) for more info on this syscall.
+        </span>fspick = <span class="number">433</span>,
+        <span class="doccomment">/// See [pidfd_open(2)](https://man7.org/linux/man-pages/man2/pidfd_open.2.html) for more info on this syscall.
+        </span>pidfd_open = <span class="number">434</span>,
+        <span class="doccomment">/// See [clone3(2)](https://man7.org/linux/man-pages/man2/clone3.2.html) for more info on this syscall.
+        </span>clone3 = <span class="number">435</span>,
+        <span class="doccomment">/// See [close_range(2)](https://man7.org/linux/man-pages/man2/close_range.2.html) for more info on this syscall.
+        </span>close_range = <span class="number">436</span>,
+        <span class="doccomment">/// See [openat2(2)](https://man7.org/linux/man-pages/man2/openat2.2.html) for more info on this syscall.
+        </span>openat2 = <span class="number">437</span>,
+        <span class="doccomment">/// See [pidfd_getfd(2)](https://man7.org/linux/man-pages/man2/pidfd_getfd.2.html) for more info on this syscall.
+        </span>pidfd_getfd = <span class="number">438</span>,
+        <span class="doccomment">/// See [faccessat2(2)](https://man7.org/linux/man-pages/man2/faccessat2.2.html) for more info on this syscall.
+        </span>faccessat2 = <span class="number">439</span>,
+        <span class="doccomment">/// See [process_madvise(2)](https://man7.org/linux/man-pages/man2/process_madvise.2.html) for more info on this syscall.
+        </span>process_madvise = <span class="number">440</span>,
+        <span class="doccomment">/// See [epoll_pwait2(2)](https://man7.org/linux/man-pages/man2/epoll_pwait2.2.html) for more info on this syscall.
+        </span>epoll_pwait2 = <span class="number">441</span>,
+        <span class="doccomment">/// See [mount_setattr(2)](https://man7.org/linux/man-pages/man2/mount_setattr.2.html) for more info on this syscall.
+        </span>mount_setattr = <span class="number">442</span>,
+        <span class="doccomment">/// See [quotactl_fd(2)](https://man7.org/linux/man-pages/man2/quotactl_fd.2.html) for more info on this syscall.
+        </span>quotactl_fd = <span class="number">443</span>,
+        <span class="doccomment">/// See [landlock_create_ruleset(2)](https://man7.org/linux/man-pages/man2/landlock_create_ruleset.2.html) for more info on this syscall.
+        </span>landlock_create_ruleset = <span class="number">444</span>,
+        <span class="doccomment">/// See [landlock_add_rule(2)](https://man7.org/linux/man-pages/man2/landlock_add_rule.2.html) for more info on this syscall.
+        </span>landlock_add_rule = <span class="number">445</span>,
+        <span class="doccomment">/// See [landlock_restrict_self(2)](https://man7.org/linux/man-pages/man2/landlock_restrict_self.2.html) for more info on this syscall.
+        </span>landlock_restrict_self = <span class="number">446</span>,
+        <span class="doccomment">/// See [memfd_secret(2)](https://man7.org/linux/man-pages/man2/memfd_secret.2.html) for more info on this syscall.
+        </span>memfd_secret = <span class="number">447</span>,
+        <span class="doccomment">/// See [process_mrelease(2)](https://man7.org/linux/man-pages/man2/process_mrelease.2.html) for more info on this syscall.
+        </span>process_mrelease = <span class="number">448</span>,
+        <span class="doccomment">/// See [futex_waitv(2)](https://man7.org/linux/man-pages/man2/futex_waitv.2.html) for more info on this syscall.
+        </span>futex_waitv = <span class="number">449</span>,
+        <span class="doccomment">/// See [set_mempolicy_home_node(2)](https://man7.org/linux/man-pages/man2/set_mempolicy_home_node.2.html) for more info on this syscall.
+        </span>set_mempolicy_home_node = <span class="number">450</span>,
+    }
+    LAST: set_mempolicy_home_node;
+}
+</code></pre></div>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="syscalls" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0" ></div></body></html>

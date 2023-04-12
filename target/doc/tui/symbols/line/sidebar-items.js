@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":[["BOTTOM_LEFT",""],["BOTTOM_RIGHT",""],["HORIZONTAL",""],["HORIZONTAL_DOWN",""],["HORIZONTAL_UP",""],["TOP_LEFT",""],["TOP_RIGHT",""],["VERTICAL",""],["VERTICAL_LEFT",""],["VERTICAL_RIGHT",""]]};

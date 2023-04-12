@@ -1,0 +1,306 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/seif/.cargo/registry/src/github.com-1ecc6299db9ec823/procfs-0.15.1/src/kpageflags.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>kpageflags.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../normalize.css"><link rel="stylesheet" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../ayu.css" disabled><link rel="stylesheet" href="../../dark.css" disabled><link rel="stylesheet" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../procfs/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../procfs/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../procfs/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<span id="2">2</span>
+<span id="3">3</span>
+<span id="4">4</span>
+<span id="5">5</span>
+<span id="6">6</span>
+<span id="7">7</span>
+<span id="8">8</span>
+<span id="9">9</span>
+<span id="10">10</span>
+<span id="11">11</span>
+<span id="12">12</span>
+<span id="13">13</span>
+<span id="14">14</span>
+<span id="15">15</span>
+<span id="16">16</span>
+<span id="17">17</span>
+<span id="18">18</span>
+<span id="19">19</span>
+<span id="20">20</span>
+<span id="21">21</span>
+<span id="22">22</span>
+<span id="23">23</span>
+<span id="24">24</span>
+<span id="25">25</span>
+<span id="26">26</span>
+<span id="27">27</span>
+<span id="28">28</span>
+<span id="29">29</span>
+<span id="30">30</span>
+<span id="31">31</span>
+<span id="32">32</span>
+<span id="33">33</span>
+<span id="34">34</span>
+<span id="35">35</span>
+<span id="36">36</span>
+<span id="37">37</span>
+<span id="38">38</span>
+<span id="39">39</span>
+<span id="40">40</span>
+<span id="41">41</span>
+<span id="42">42</span>
+<span id="43">43</span>
+<span id="44">44</span>
+<span id="45">45</span>
+<span id="46">46</span>
+<span id="47">47</span>
+<span id="48">48</span>
+<span id="49">49</span>
+<span id="50">50</span>
+<span id="51">51</span>
+<span id="52">52</span>
+<span id="53">53</span>
+<span id="54">54</span>
+<span id="55">55</span>
+<span id="56">56</span>
+<span id="57">57</span>
+<span id="58">58</span>
+<span id="59">59</span>
+<span id="60">60</span>
+<span id="61">61</span>
+<span id="62">62</span>
+<span id="63">63</span>
+<span id="64">64</span>
+<span id="65">65</span>
+<span id="66">66</span>
+<span id="67">67</span>
+<span id="68">68</span>
+<span id="69">69</span>
+<span id="70">70</span>
+<span id="71">71</span>
+<span id="72">72</span>
+<span id="73">73</span>
+<span id="74">74</span>
+<span id="75">75</span>
+<span id="76">76</span>
+<span id="77">77</span>
+<span id="78">78</span>
+<span id="79">79</span>
+<span id="80">80</span>
+<span id="81">81</span>
+<span id="82">82</span>
+<span id="83">83</span>
+<span id="84">84</span>
+<span id="85">85</span>
+<span id="86">86</span>
+<span id="87">87</span>
+<span id="88">88</span>
+<span id="89">89</span>
+<span id="90">90</span>
+<span id="91">91</span>
+<span id="92">92</span>
+<span id="93">93</span>
+<span id="94">94</span>
+<span id="95">95</span>
+<span id="96">96</span>
+<span id="97">97</span>
+<span id="98">98</span>
+<span id="99">99</span>
+<span id="100">100</span>
+<span id="101">101</span>
+<span id="102">102</span>
+<span id="103">103</span>
+<span id="104">104</span>
+<span id="105">105</span>
+<span id="106">106</span>
+<span id="107">107</span>
+<span id="108">108</span>
+<span id="109">109</span>
+<span id="110">110</span>
+<span id="111">111</span>
+<span id="112">112</span>
+<span id="113">113</span>
+<span id="114">114</span>
+<span id="115">115</span>
+<span id="116">116</span>
+<span id="117">117</span>
+<span id="118">118</span>
+<span id="119">119</span>
+<span id="120">120</span>
+<span id="121">121</span>
+<span id="122">122</span>
+<span id="123">123</span>
+<span id="124">124</span>
+<span id="125">125</span>
+<span id="126">126</span>
+<span id="127">127</span>
+<span id="128">128</span>
+<span id="129">129</span>
+<span id="130">130</span>
+<span id="131">131</span>
+<span id="132">132</span>
+<span id="133">133</span>
+<span id="134">134</span>
+<span id="135">135</span>
+<span id="136">136</span>
+<span id="137">137</span>
+<span id="138">138</span>
+<span id="139">139</span>
+<span id="140">140</span>
+<span id="141">141</span>
+<span id="142">142</span>
+<span id="143">143</span>
+<span id="144">144</span>
+<span id="145">145</span>
+<span id="146">146</span>
+<span id="147">147</span>
+<span id="148">148</span>
+<span id="149">149</span>
+<span id="150">150</span>
+<span id="151">151</span>
+<span id="152">152</span>
+</pre><pre class="rust"><code><span class="kw">use crate</span>::{process::Pfn, FileWrapper, ProcResult};
+
+<span class="kw">use </span>bitflags::bitflags;
+<span class="kw">use </span>std::{
+    io::{BufReader, Read, Seek, SeekFrom},
+    mem::size_of,
+    path::Path,
+};
+
+<span class="attribute">#[cfg(feature = <span class="string">&quot;serde1&quot;</span>)]
+</span><span class="kw">use </span>serde::{Deserialize, Serialize};
+
+<span class="comment">//const fn genmask(high: usize, low: usize) -&gt; u64 {
+//    let mask_bits = size_of::&lt;u64&gt;() * 8;
+//    (!0 - (1 &lt;&lt; low) + 1) &amp; (!0 &gt;&gt; (mask_bits - 1 - high))
+//}
+
+</span><span class="macro">bitflags! </span>{
+    <span class="doccomment">/// Represents the fields and flags in a page table entry for a memory page.
+    </span><span class="attribute">#[cfg_attr(feature = <span class="string">&quot;serde1&quot;</span>, derive(Serialize, Deserialize))]
+    </span><span class="kw">pub struct </span>PhysicalPageFlags: u64 {
+        <span class="doccomment">/// The page is being locked for exclusive access, e.g. by undergoing read/write IO
+        </span><span class="kw">const </span>LOCKED = <span class="number">1 </span>&lt;&lt; <span class="number">0</span>;
+        <span class="doccomment">/// IO error occurred
+        </span><span class="kw">const </span>ERROR = <span class="number">1 </span>&lt;&lt; <span class="number">1</span>;
+        <span class="doccomment">/// The page has been referenced since last LRU list enqueue/requeue
+        </span><span class="kw">const </span>REFERENCED = <span class="number">1 </span>&lt;&lt; <span class="number">2</span>;
+        <span class="doccomment">/// The page has up-to-date data. ie. for file backed page: (in-memory data revision &gt;= on-disk one)
+        </span><span class="kw">const </span>UPTODATE = <span class="number">1 </span>&lt;&lt; <span class="number">3</span>;
+        <span class="doccomment">/// The page has been written to, hence contains new data. i.e. for file backed page: (in-memory data revision &gt; on-disk one)
+        </span><span class="kw">const </span>DIRTY = <span class="number">1 </span>&lt;&lt; <span class="number">4</span>;
+        <span class="doccomment">/// The page is in one of the LRU lists
+        </span><span class="kw">const </span>LRU = <span class="number">1 </span>&lt;&lt; <span class="number">5</span>;
+        <span class="doccomment">/// The page is in the active LRU list
+        </span><span class="kw">const </span>ACTIVE = <span class="number">1 </span>&lt;&lt; <span class="number">6</span>;
+        <span class="doccomment">/// The page is managed by the SLAB/SLOB/SLUB/SLQB kernel memory allocator. When compound page is used, SLUB/SLQB will only set this flag on the head page; SLOB will not flag it at all
+        </span><span class="kw">const </span>SLAB = <span class="number">1 </span>&lt;&lt; <span class="number">7</span>;
+        <span class="doccomment">/// The page is being synced to disk
+        </span><span class="kw">const </span>WRITEBACK = <span class="number">1 </span>&lt;&lt; <span class="number">8</span>;
+        <span class="doccomment">/// The page will be reclaimed soon after its pageout IO completed
+        </span><span class="kw">const </span>RECLAIM = <span class="number">1 </span>&lt;&lt; <span class="number">9</span>;
+        <span class="doccomment">/// A free memory block managed by the buddy system allocator. The buddy system organizes free memory in blocks of various orders. An order N block has 2^N physically contiguous pages, with the BUDDY flag set for and _only_ for the first page
+        </span><span class="kw">const </span>BUDDY = <span class="number">1 </span>&lt;&lt; <span class="number">10</span>;
+        <span class="doccomment">/// A memory mapped page
+        </span><span class="kw">const </span>MMAP = <span class="number">1 </span>&lt;&lt; <span class="number">11</span>;
+        <span class="doccomment">/// A memory mapped page that is not part of a file
+        </span><span class="kw">const </span>ANON = <span class="number">1 </span>&lt;&lt; <span class="number">12</span>;
+        <span class="doccomment">/// The page is mapped to swap space, i.e. has an associated swap entry
+        </span><span class="kw">const </span>SWAPCACHE = <span class="number">1 </span>&lt;&lt; <span class="number">13</span>;
+        <span class="doccomment">/// The page is backed by swap/RAM
+        </span><span class="kw">const </span>SWAPBACKED = <span class="number">1 </span>&lt;&lt; <span class="number">14</span>;
+        <span class="doccomment">/// A compound page with order N consists of 2^N physically contiguous pages. A compound page with order 2 takes the form of “HTTT”, where H donates its head page and T donates its tail page(s). The major consumers of compound pages are hugeTLB pages (&lt;https://www.kernel.org/doc/html/latest/admin-guide/mm/hugetlbpage.html#hugetlbpage&gt;), the SLUB etc. memory allocators and various device drivers. However in this interface, only huge/giga pages are made visible to end users
+        </span><span class="kw">const </span>COMPOUND_HEAD = <span class="number">1 </span>&lt;&lt; <span class="number">15</span>;
+        <span class="doccomment">/// A compound page tail (see description above)
+        </span><span class="kw">const </span>COMPOUND_TAIL = <span class="number">1 </span>&lt;&lt; <span class="number">16</span>;
+        <span class="doccomment">/// This is an integral part of a HugeTLB page
+        </span><span class="kw">const </span>HUGE = <span class="number">1 </span>&lt;&lt; <span class="number">17</span>;
+        <span class="doccomment">/// The page is in the unevictable (non-)LRU list It is somehow pinned and not a candidate for LRU page reclaims, e.g. ramfs pages, shmctl(SHM_LOCK) and mlock() memory segments
+        </span><span class="kw">const </span>UNEVICTABLE = <span class="number">1 </span>&lt;&lt; <span class="number">18</span>;
+        <span class="doccomment">/// Hardware detected memory corruption on this page: don’t touch the data!
+        </span><span class="kw">const </span>HWPOISON = <span class="number">1 </span>&lt;&lt; <span class="number">19</span>;
+        <span class="doccomment">/// No page frame exists at the requested address
+        </span><span class="kw">const </span>NOPAGE = <span class="number">1 </span>&lt;&lt; <span class="number">20</span>;
+        <span class="doccomment">/// Identical memory pages dynamically shared between one or more processes
+        </span><span class="kw">const </span>KSM = <span class="number">1 </span>&lt;&lt; <span class="number">21</span>;
+        <span class="doccomment">/// Contiguous pages which construct transparent hugepages
+        </span><span class="kw">const </span>THP = <span class="number">1 </span>&lt;&lt; <span class="number">22</span>;
+        <span class="doccomment">/// The page is logically offline
+        </span><span class="kw">const </span>OFFLINE = <span class="number">1 </span>&lt;&lt; <span class="number">23</span>;
+        <span class="doccomment">/// Zero page for pfn_zero or huge_zero page
+        </span><span class="kw">const </span>ZERO_PAGE = <span class="number">1 </span>&lt;&lt; <span class="number">24</span>;
+        <span class="doccomment">/// The page has not been accessed since it was marked idle (see &lt;https://www.kernel.org/doc/html/latest/admin-guide/mm/idle_page_tracking.html#idle-page-tracking&gt;). Note that this flag may be stale in case the page was accessed via a PTE. To make sure the flag is up-to-date one has to read /sys/kernel/mm/page_idle/bitmap first
+        </span><span class="kw">const </span>IDLE = <span class="number">1 </span>&lt;&lt; <span class="number">25</span>;
+        <span class="doccomment">/// The page is in use as a page table
+        </span><span class="kw">const </span>PGTABLE = <span class="number">1 </span>&lt;&lt; <span class="number">26</span>;
+
+    }
+}
+
+<span class="kw">impl </span>PhysicalPageFlags {
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>parse_info(info: u64) -&gt; <span class="self">Self </span>{
+        PhysicalPageFlags::from_bits_truncate(info)
+    }
+}
+
+<span class="doccomment">/// Parse physical memory flags accessing `/proc/kpageflags`.
+///
+/// Require root or CAP_SYS_ADMIN
+</span><span class="kw">pub struct </span>KPageFlags {
+    reader: BufReader&lt;FileWrapper&gt;,
+}
+
+<span class="kw">impl </span>KPageFlags {
+    <span class="doccomment">/// Get a parser from default `/proc/kpageflags`
+    ///
+    /// Return `Err` if process is not running as root or don&#39;t have CAP_SYS_ADMIN
+    </span><span class="kw">pub fn </span>new() -&gt; ProcResult&lt;<span class="self">Self</span>&gt; {
+        <span class="self">Self</span>::from_custom_root(<span class="string">&quot;/proc&quot;</span>)
+    }
+
+    <span class="doccomment">/// Get a parser from custom `/proc`
+    ///
+    /// Return `Err` if process is not running as root or don&#39;t have CAP_SYS_ADMIN
+    </span><span class="kw">pub fn </span>from_custom_root&lt;P: AsRef&lt;Path&gt;&gt;(root: P) -&gt; ProcResult&lt;<span class="self">Self</span>&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>path = root.as_ref().to_path_buf();
+        path.push(<span class="string">&quot;kpageflags&quot;</span>);
+
+        <span class="kw">let </span>reader = BufReader::new(FileWrapper::open(path)<span class="question-mark">?</span>);
+
+        <span class="prelude-val">Ok</span>(<span class="self">Self </span>{ reader })
+    }
+
+    <span class="doccomment">/// Retrieve information in the page table entry for the PFN (page frame number) at index `page_index`.
+    /// If you need to retrieve multiple PFNs, opt for [Self::get_range_info()] instead.
+    ///
+    /// Return Err if the PFN is not in RAM (see [crate::iomem()]):
+    /// Io(Error { kind: UnexpectedEof, message: &quot;failed to fill whole buffer&quot; }, None)
+    </span><span class="kw">pub fn </span>get_info(<span class="kw-2">&amp;mut </span><span class="self">self</span>, pfn: Pfn) -&gt; ProcResult&lt;PhysicalPageFlags&gt; {
+        <span class="self">self</span>.get_range_info(pfn, Pfn(pfn.<span class="number">0 </span>+ <span class="number">1</span>))
+            .map(|<span class="kw-2">mut </span>vec| vec.pop().unwrap())
+    }
+
+    <span class="doccomment">/// Retrieve information in the page table entry for the PFNs within range `start` (included) and `end` (excluded) PFNs.
+    ///
+    /// Return Err if any PFN is not in RAM (see [crate::iomem()]):
+    /// Io(Error { kind: UnexpectedEof, message: &quot;failed to fill whole buffer&quot; }, None)
+    </span><span class="kw">pub fn </span>get_range_info(<span class="kw-2">&amp;mut </span><span class="self">self</span>, start: Pfn, end: Pfn) -&gt; ProcResult&lt;Vec&lt;PhysicalPageFlags&gt;&gt; {
+        <span class="kw">let </span>start_position = start.<span class="number">0 </span>* size_of::&lt;PhysicalPageFlags&gt;() <span class="kw">as </span>u64;
+        <span class="self">self</span>.reader.seek(SeekFrom::Start(start_position))<span class="question-mark">?</span>;
+
+        <span class="kw">let </span><span class="kw-2">mut </span>page_infos = Vec::with_capacity((end.<span class="number">0 </span>- start.<span class="number">0</span>) <span class="kw">as </span>usize);
+        <span class="kw">for _ in </span>start.<span class="number">0</span>..end.<span class="number">0 </span>{
+            <span class="kw">let </span><span class="kw-2">mut </span>info_bytes = [<span class="number">0</span>; size_of::&lt;PhysicalPageFlags&gt;()];
+            <span class="self">self</span>.reader.read_exact(<span class="kw-2">&amp;mut </span>info_bytes)<span class="question-mark">?</span>;
+            page_infos.push(PhysicalPageFlags::parse_info(u64::from_ne_bytes(info_bytes)));
+        }
+
+        <span class="prelude-val">Ok</span>(page_infos)
+    }
+}
+
+<span class="attribute">#[cfg(test)]
+</span><span class="kw">mod </span>tests {
+    <span class="kw">use super</span>::<span class="kw-2">*</span>;
+
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>test_kpageflags_parsing() {
+        <span class="kw">let </span>pagemap_entry: u64 = <span class="number">0b0000000000000000000000000000000000000000000000000000000000000001</span>;
+        <span class="kw">let </span>info = PhysicalPageFlags::parse_info(pagemap_entry);
+        <span class="macro">assert!</span>(info == PhysicalPageFlags::LOCKED);
+    }
+}
+</code></pre></div>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="procfs" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0" ></div></body></html>

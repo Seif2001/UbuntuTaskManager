@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":[["Event",""]],"struct":[["Config",""],["Events","An small event handler that wrap termion input and tick events. Each event type is handled in its own thread and returned to a common `Receiver`"]]};
